@@ -1,4 +1,8 @@
-﻿using System.Threading.Channels;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace FluentState
 {
@@ -8,13 +12,15 @@ namespace FluentState
     {
         private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
         private readonly Thread _stimulusProcessingThread;
-        private CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationTokenSource _cancellationTokenSource;
 
         public AsyncStateMachine(TState initialState) : base(initialState)
         {
             _cancellationTokenSource = new CancellationTokenSource();
-            _stimulusProcessingThread = new Thread(() => { ProcessStimuli(_cancellationTokenSource.Token); });
-            _stimulusProcessingThread.IsBackground = true;
+            _stimulusProcessingThread = new Thread(() => { ProcessStimuli(_cancellationTokenSource.Token); })
+            {
+                IsBackground = true
+            };
             _stimulusProcessingThread.Start();
         }
 
@@ -38,6 +44,7 @@ namespace FluentState
 
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
             _cancellationTokenSource.Cancel();
         }
 

@@ -1,4 +1,6 @@
-﻿namespace FluentState.Builder
+﻿using System;
+
+namespace FluentState.Builder
 {
     public class TStateMachineBuilder<TStateMachine, TState, TStimulus> : IStateMachineBuilder<TStateMachine, TState, TStimulus>
         where TStateMachine : IStateMachine<TState, TStimulus>

@@ -1,4 +1,7 @@
-﻿namespace FluentState
+﻿using System;
+using System.Collections.Generic;
+
+namespace FluentState
 {
     public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
         where TState : notnull
@@ -144,7 +147,8 @@
             TriggerActions(_stateStimulusLeaveActions, actionParams.ToTuple(), actionParams);
         }
 
-        private void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState enteringState, TState leavingState, TStimulus reason) actionParams)
+        private static void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState enteringState, TState leavingState, TStimulus reason) actionParams) 
+            where TKey : notnull
         {
             if (actionMap.ContainsKey(key))
             {
@@ -152,7 +156,7 @@
             }
         }
 
-        private void TriggerActions(IEnumerable<Action<TState, TState, TStimulus>> actions, (TState enteringState, TState leavingState, TStimulus reason) actionParams)
+        private static void TriggerActions(IEnumerable<Action<TState, TState, TStimulus>> actions, (TState enteringState, TState leavingState, TStimulus reason) actionParams)
         {
             foreach (var action in actions)
             {

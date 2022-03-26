@@ -1,4 +1,7 @@
-﻿namespace FluentState
+﻿using System;
+using System.Threading.Tasks;
+
+namespace FluentState
 {
     public interface IAsyncStateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>, IDisposable
         where TState : notnull

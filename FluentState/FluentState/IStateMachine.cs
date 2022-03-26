@@ -1,4 +1,6 @@
-﻿namespace FluentState
+﻿using System;
+
+namespace FluentState
 {
     public interface IStateMachine<TState, TStimulus>
         where TState : notnull
