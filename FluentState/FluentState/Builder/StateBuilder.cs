@@ -1,14 +1,15 @@
 ﻿namespace FluentState.Builder
 {
-    public class StateBuilder<TState, TStimulus> 
+    public class StateBuilder<TStateMachine, TState, TStimulus> : IStateBuilder<TStateMachine, TState, TStimulus>
+        where TStateMachine : IStateMachine<TState, TStimulus>
         where TState : notnull
         where TStimulus : notnull
     {
-        private readonly StateMachineBuilder<TState, TStimulus> _machineBuilder;
-        private readonly StateMachine<TState, TStimulus> _machine;
+        private readonly IStateMachineBuilder<TStateMachine, TState, TStimulus> _machineBuilder;
+        private readonly IStateMachine<TState, TStimulus> _machine;
         private readonly TState _state;
 
-        public StateBuilder(StateMachineBuilder<TState, TStimulus> machineBuilder, StateMachine<TState, TStimulus> machine, TState state)
+        public StateBuilder(IStateMachineBuilder<TStateMachine, TState, TStimulus> machineBuilder, IStateMachine<TState, TStimulus> machine, TState state)
         {
             _machineBuilder = machineBuilder;
             _machine = machine;
@@ -16,41 +17,44 @@
 
         }
 
-        public StateBuilder<TState, TStimulus> CanTransitionTo(TState to, TStimulus when, Action<TState, TState, TStimulus>? action = null)
+        public IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(TState to, TStimulus when, IEnumerable<Action<TState, TState, TStimulus>>? actions = null)
         {
             _machine.AddTransition(_state, to, when);
-            if (action != null)
+            if (actions != null)
             {
-                _machine.AddStateEnterAction(to, _state, when, action);
+                foreach(var action in actions)
+                {
+                    _machine.AddStateEnterAction(to, _state, when, action);
+                }
             }
             return this;
         }
 
-        public StateBuilder<TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action)
+        public IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action)
         {
             _machine.AddStateEnterAction(_state, action);
             return this;
         }
 
-        public StateBuilder<TState, TStimulus> WithLeaveAction(Action<TState, TState, TStimulus> action)
+        public IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<TState, TState, TStimulus> action)
         {
             _machine.AddStateLeaveAction(_state, action);
             return this;
         }
 
-        public StateBuilder<TState, TStimulus> WithEnterAction(TState from, TStimulus reason, Action<TState, TState, TStimulus> action)
+        public IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(TState from, TStimulus reason, Action<TState, TState, TStimulus> action)
         {
             _machine.AddStateEnterAction(_state, from, reason, action);
             return this;
         }
 
-        public StateBuilder<TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, Action<TState, TState, TStimulus> action)
+        public IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, Action<TState, TState, TStimulus> action)
         {
             _machine.AddStateLeaveAction(_state, to, reason, action);
             return this;
         }
 
-        public StateMachineBuilder<TState, TStimulus> Build()
+        public IStateMachineBuilder<TStateMachine, TState, TStimulus> Build()
         {
             return _machineBuilder;
         }

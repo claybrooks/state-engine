@@ -1,6 +1,6 @@
 ﻿namespace FluentState
 {
-    public class StateMachine<TState, TStimulus> 
+    public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
         where TState : notnull
         where TStimulus : notnull
     {
@@ -18,6 +18,11 @@
         }
 
         public TState CurrentState { get; private set; }
+
+        public void OverrideState(TState state)
+        {
+            CurrentState = state;
+        }
 
         public bool AddTransition(TState fromState, TState toState, TStimulus when)
         {
@@ -79,7 +84,7 @@
             _stateStimulusLeaveActions[key].Add(action);
         }
 
-        public bool Poke(TStimulus stimulus)
+        public bool Post(TStimulus stimulus)
         {
             // Unable to get the next state with the supplied stimulus
             if (!TryGetNextState(CurrentState, stimulus, out TState nextState))

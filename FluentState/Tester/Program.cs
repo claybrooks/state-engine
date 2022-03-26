@@ -11,7 +11,7 @@ void PlayOneOffAction(State to, State from, Stimulus reason)
     Console.WriteLine($"Playing special animation for {from}->{to} because of {reason}");
 }
 
-var stateMachine = new StateMachineBuilder<State, Stimulus>(State.Idle)
+var stateMachine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithEnterAction((toState, fromState, reason) => { Console.WriteLine($"Entering {toState}"); })
     .WithEnterAction(PlayAnimation)
     .WithLeaveAction((toState, fromState, reason) => { Console.WriteLine($"Leaving {fromState}"); })
@@ -28,7 +28,7 @@ var stateMachine = new StateMachineBuilder<State, Stimulus>(State.Idle)
     .WithState(State.Running)
         .CanTransitionTo(State.Walking, Stimulus.Walk)
         .CanTransitionTo(State.Idle, Stimulus.Stop)
-        .CanTransitionTo(State.Idle, Stimulus.QuickStop, PlayOneOffAction)
+        .CanTransitionTo(State.Idle, Stimulus.QuickStop, new List<Action<State, State, Stimulus>> () { PlayOneOffAction })
         .Build()
     .WithState(State.Crouched)
         .CanTransitionTo(State.CrouchWalking, Stimulus.Walk)
@@ -52,20 +52,35 @@ do
     switch (key)
     {
         case ConsoleKey.W:
-            stateMachine.Poke(Stimulus.Walk);
+            await stateMachine.Post(Stimulus.Walk);
             break;
         case ConsoleKey.C:
-            stateMachine.Poke(Stimulus.Crouch);
+            await stateMachine.Post(Stimulus.Crouch);
             break;
         case ConsoleKey.R:
-            stateMachine.Poke(Stimulus.Run);
+            await stateMachine.Post(Stimulus.Run);
             break;
         case ConsoleKey.S:
-            stateMachine.Poke(Stimulus.Stop);
+            await stateMachine.Post(Stimulus.Stop);
             break;
         case ConsoleKey.Q:
-            stateMachine.Poke(Stimulus.QuickStop);
+            await stateMachine.Post(Stimulus.QuickStop);
             break;
     }
 
 } while (key != ConsoleKey.Escape);
+
+await stateMachine.Post(Stimulus.Walk);
+await stateMachine.Post(Stimulus.Crouch);
+await stateMachine.Post(Stimulus.Stop);
+await stateMachine.Post(Stimulus.Stop);
+await stateMachine.Post(Stimulus.Run);
+await stateMachine.Post(Stimulus.QuickStop);
+await stateMachine.Post(Stimulus.Crouch);
+await stateMachine.Post(Stimulus.Walk);
+await stateMachine.Post(Stimulus.Stop);
+await stateMachine.Post(Stimulus.Stop);
+
+await stateMachine.EmptyQueue();
+
+stateMachine.Dispose();
