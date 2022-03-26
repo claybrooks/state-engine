@@ -10,6 +10,8 @@ namespace FluentState
 
         void OverrideState(TState state);
 
+        bool AddTransitionGuard(TState fromState, TState toState, TStimulus when, Func<TState, TState, TStimulus, bool> guard);
+
         bool AddTransition(TState fromState, TState toState, TStimulus when);
 
         void AddStateEnterAction(Action<TState, TState, TStimulus> action);

@@ -1,20 +1,32 @@
 ﻿using FluentState.Builder;
 using Tester;
 
-void PlayAnimation(State to, State from, Stimulus reason)
+void PlayAnimation(State from, State to, Stimulus reason)
 {
     Console.WriteLine($"Playing {from}->{to} animation");
 }
 
-void PlayOneOffAction(State to, State from, Stimulus reason)
+void PlayOneOffAction(State from, State to, Stimulus reason)
 {
     Console.WriteLine($"Playing special animation for {from}->{to} because of {reason}");
 }
 
+var dateOfLastQuickStop = DateTime.UnixEpoch;
+int quickStopCoolDownInSeconds = 5;
+bool QuickStopCooldownCheck(State from, State to, Stimulus reason)
+{
+    var success = (DateTime.Now - dateOfLastQuickStop).TotalSeconds > quickStopCoolDownInSeconds;
+    if (success)
+    {
+        dateOfLastQuickStop = DateTime.Now;
+    }
+    return success;
+}
+
 var stateMachine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
-    .WithEnterAction((toState, fromState, reason) => { Console.WriteLine($"Entering {toState}"); })
+    .WithEnterAction((fromState, toState, reason) => { Console.WriteLine($"Entering {toState}"); })
     .WithEnterAction(PlayAnimation)
-    .WithLeaveAction((toState, fromState, reason) => { Console.WriteLine($"Leaving {fromState}"); })
+    .WithLeaveAction((fromState, toState, reason) => { Console.WriteLine($"Leaving {fromState}"); })
     .WithState(State.Idle)
         .CanTransitionTo(State.Walking, Stimulus.Walk)
         .CanTransitionTo(State.Running, Stimulus.Run)
@@ -28,7 +40,7 @@ var stateMachine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithState(State.Running)
         .CanTransitionTo(State.Walking, Stimulus.Walk)
         .CanTransitionTo(State.Idle, Stimulus.Stop)
-        .CanTransitionTo(State.Idle, Stimulus.QuickStop, new List<Action<State, State, Stimulus>> () { PlayOneOffAction })
+        .CanTransitionTo(State.Idle, Stimulus.QuickStop, new List<Action<State, State, Stimulus>> () { PlayOneOffAction }, QuickStopCooldownCheck)
         .Build()
     .WithState(State.Crouched)
         .CanTransitionTo(State.CrouchWalking, Stimulus.Walk)
