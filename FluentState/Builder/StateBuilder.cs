@@ -20,7 +20,12 @@ namespace FluentState.Builder
 
         }
 
-        public IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(TState to, TStimulus when, IEnumerable<Action<TState, TState, TStimulus>>? actions = null, Func<TState, TState, TStimulus, bool>? guard = null)
+        public IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(
+            TState to,
+            TStimulus when,
+            IEnumerable<Action<TState, TState, TStimulus>>? actions = null,
+            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null
+        )
         {
             _machine.AddTransition(_state, to, when);
             if (actions != null)
@@ -31,9 +36,12 @@ namespace FluentState.Builder
                 }
             }
 
-            if (guard != null)
+            if (guards != null)
             {
-                _machine.AddTransitionGuard(_state, to, when, guard);
+                foreach (var guard in guards)
+                {
+                    _machine.AddTransitionGuard(_state, to, when, guard);
+                }
             }
 
             return this;

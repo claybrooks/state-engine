@@ -8,7 +8,13 @@ namespace FluentState.Builder
         where TState : notnull
         where TStimulus : notnull
     {
-        IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(TState to, TStimulus when, IEnumerable<Action<TState, TState, TStimulus>>? actions = null, Func<TState, TState, TStimulus, bool>? guard = null);
+        IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(
+            TState to,
+            TStimulus when,
+            IEnumerable<Action<TState, TState, TStimulus>>? actions = null,
+            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null
+        );
+
         IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action);
         IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<TState, TState, TStimulus> action);
         IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(TState from, TStimulus reason, Action<TState, TState, TStimulus> action);

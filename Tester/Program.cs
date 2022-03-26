@@ -6,7 +6,7 @@ void PlayAnimation(State from, State to, Stimulus reason)
     Console.WriteLine($"Playing {from}->{to} animation");
 }
 
-void PlayOneOffAction(State from, State to, Stimulus reason)
+void PlayQuickStopAction(State from, State to, Stimulus reason)
 {
     Console.WriteLine($"Playing special animation for {from}->{to} because of {reason}");
 }
@@ -40,7 +40,7 @@ var stateMachine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithState(State.Running)
         .CanTransitionTo(State.Walking, Stimulus.Walk)
         .CanTransitionTo(State.Idle, Stimulus.Stop)
-        .CanTransitionTo(State.Idle, Stimulus.QuickStop, new List<Action<State, State, Stimulus>> () { PlayOneOffAction }, QuickStopCooldownCheck)
+        .CanTransitionTo(State.Idle, Stimulus.QuickStop, new List<Action<State, State, Stimulus>> () { PlayQuickStopAction }, new List<Func<State, State, Stimulus, bool>>() { QuickStopCooldownCheck })
         .Build()
     .WithState(State.Crouched)
         .CanTransitionTo(State.CrouchWalking, Stimulus.Walk)

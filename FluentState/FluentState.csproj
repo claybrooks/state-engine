@@ -12,13 +12,13 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
     <PackageTags>fluent;statemachine;state;machine</PackageTags>
-    <PackageReleaseNotes>Added some additional supported platforms</PackageReleaseNotes>
+    <PackageReleaseNotes>Added transition guards</PackageReleaseNotes>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md">
+    <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
