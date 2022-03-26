@@ -5,7 +5,7 @@
         where TStimulus : notnull
     {
         new Task<bool> Post(TStimulus stimulus);
-        Task<bool> PostAndWait(TStimulus stimulus);
-        Task EmptyQueue();
+        Task<bool> PostAndWaitAsync(TStimulus stimulus);
+        Task AwaitIdleAsync();
     }
 }

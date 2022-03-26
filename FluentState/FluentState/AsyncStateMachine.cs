@@ -24,14 +24,14 @@ namespace FluentState
             return true;
         }
 
-        public async Task<bool> PostAndWait(TStimulus stimulus)
+        public async Task<bool> PostAndWaitAsync(TStimulus stimulus)
         {
             await _stimulusChannel.Writer.WriteAsync(stimulus);
-            await EmptyQueue();
+            await AwaitIdleAsync();
             return true;
         }
 
-        public async Task EmptyQueue()
+        public async Task AwaitIdleAsync()
         {
             await _stimulusChannel.Reader.Completion;
         }

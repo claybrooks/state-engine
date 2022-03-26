@@ -81,6 +81,6 @@ await stateMachine.Post(Stimulus.Walk);
 await stateMachine.Post(Stimulus.Stop);
 await stateMachine.Post(Stimulus.Stop);
 
-await stateMachine.EmptyQueue();
+await stateMachine.AwaitIdleAsync();
 
 stateMachine.Dispose();
