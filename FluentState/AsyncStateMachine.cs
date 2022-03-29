@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace FluentState
 {
     public class AsyncStateMachine<TState, TStimulus> : StateMachine<TState, TStimulus>, IAsyncStateMachine<TState, TStimulus>
-        where TState : notnull
-        where TStimulus : notnull
+        where TState : struct
+        where TStimulus : struct
     {
         private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
         private readonly Thread _stimulusProcessingThread;
@@ -30,16 +30,23 @@ namespace FluentState
             return true;
         }
 
-        public async Task<bool> PostAndWaitAsync(TStimulus stimulus)
+        public async Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken cancelToken = default)
         {
-            await _stimulusChannel.Writer.WriteAsync(stimulus);
-            await AwaitIdleAsync();
+            await _stimulusChannel.Writer.WriteAsync(stimulus, cancelToken);
+            await AwaitIdleAsync(cancelToken);
             return true;
         }
 
-        public async Task AwaitIdleAsync()
+        public Task AwaitIdleAsync(CancellationToken cancelToken = default)
         {
-            await _stimulusChannel.Reader.Completion;
+            return Task.Run(() =>
+            {
+                while (_stimulusChannel.Reader.Count > 0)
+                {
+                    continue;
+                }
+                return true;
+            });
         }
 
         public void Dispose()
@@ -54,23 +61,17 @@ namespace FluentState
         {
             while (!cancelToken.IsCancellationRequested)
             {
-                IAsyncEnumerable<TStimulus> items;
                 try
                 {
-                    await _stimulusChannel.Reader.WaitToReadAsync(cancelToken);
-                    items = _stimulusChannel.Reader.ReadAllAsync(cancelToken);
+                    while (await _stimulusChannel.Reader.WaitToReadAsync(cancelToken))
+                    { 
+                        var next = await _stimulusChannel.Reader.ReadAsync(cancelToken);
+                        base.Post(next);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
                     continue;
-                }
-
-                if (items != null)
-                {
-                    await foreach (var item in items)
-                    {
-                        base.Post(item);
-                    }
                 }
             }
         }

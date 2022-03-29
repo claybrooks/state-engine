@@ -5,8 +5,8 @@ namespace FluentState.Builder
 {
     public interface IStateBuilder<TStateMachine, TState, TStimulus>
         where TStateMachine : IStateMachine<TState, TStimulus>
-        where TState : notnull
-        where TStimulus : notnull
+        where TState : struct
+        where TStimulus : struct
     {
         IStateBuilder<TStateMachine, TState, TStimulus> CanTransitionTo(
             TState to,
@@ -17,8 +17,8 @@ namespace FluentState.Builder
 
         IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action);
         IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<TState, TState, TStimulus> action);
-        IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(TState from, TStimulus reason, Action<TState, TState, TStimulus> action);
-        IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, Action<TState, TState, TStimulus> action);
+        IStateBuilder<TStateMachine, TState, TStimulus> WithEnterAction(TState enteringState, TStimulus reason, Action<TState, TState, TStimulus> action);
+        IStateBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(TState leavingState, TStimulus reason, Action<TState, TState, TStimulus> action);
         IStateMachineBuilder<TStateMachine, TState, TStimulus> Build();
     }
 }

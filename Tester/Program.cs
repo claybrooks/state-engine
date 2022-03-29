@@ -1,14 +1,14 @@
 ﻿using FluentState.Builder;
 using Tester;
 
-void PlayAnimation(State from, State to, Stimulus reason)
+void PlayAnimation(State enteringState, State leavingState, Stimulus reason)
 {
-    Console.WriteLine($"Playing {from}->{to} animation");
+    Console.WriteLine($"Playing {leavingState}->{enteringState} animation");
 }
 
-void PlayQuickStopAction(State from, State to, Stimulus reason)
+void PlayQuickStopAction(State enteringState, State leavingState, Stimulus reason)
 {
-    Console.WriteLine($"Playing special animation for {from}->{to} because of {reason}");
+    Console.WriteLine($"Playing special animation for {leavingState}->{enteringState} because of {reason}");
 }
 
 var dateOfLastQuickStop = DateTime.UnixEpoch;
@@ -24,6 +24,7 @@ bool QuickStopCooldownCheck(State from, State to, Stimulus reason)
 }
 
 var stateMachine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
+    .WithUnboundedHistory()
     .WithEnterAction((fromState, toState, reason) => { Console.WriteLine($"Entering {toState}"); })
     .WithEnterAction(PlayAnimation)
     .WithLeaveAction((fromState, toState, reason) => { Console.WriteLine($"Leaving {fromState}"); })
@@ -82,6 +83,10 @@ do
 
 } while (key != ConsoleKey.Escape);
 
+
+var serializer = new FluentState.Persistence.JsonSerializer<State, Stimulus>(new StateTypeConverter());
+await serializer.Save(stateMachine, "stateMachine.json");
+
 await stateMachine.Post(Stimulus.Walk);
 await stateMachine.Post(Stimulus.Crouch);
 await stateMachine.Post(Stimulus.Stop);
@@ -94,5 +99,7 @@ await stateMachine.Post(Stimulus.Stop);
 await stateMachine.Post(Stimulus.Stop);
 
 await stateMachine.AwaitIdleAsync();
+
+await serializer.Load(stateMachine, "stateMachine.json");
 
 stateMachine.Dispose();
