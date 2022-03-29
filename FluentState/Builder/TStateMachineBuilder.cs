@@ -4,8 +4,8 @@ namespace FluentState.Builder
 {
     public class TStateMachineBuilder<TStateMachine, TState, TStimulus> : IStateMachineBuilder<TStateMachine, TState, TStimulus>
         where TStateMachine : IStateMachine<TState, TStimulus>
-        where TState : notnull
-        where TStimulus : notnull
+        where TState : struct
+        where TStimulus : struct
     {
         protected readonly TStateMachine _machine;
 
@@ -19,9 +19,11 @@ namespace FluentState.Builder
             _machine = maybeMachine;
         }
 
+        public IStateMachine<TState, TStimulus> Machine => _machine;
+
         public IStateBuilder<TStateMachine, TState, TStimulus> WithState(TState from)
         {
-            return new StateBuilder<TStateMachine, TState, TStimulus> (this, _machine, from);
+            return new StateBuilder<TStateMachine, TState, TStimulus> (this, from);
         }
 
         public IStateMachineBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action)
@@ -39,6 +41,20 @@ namespace FluentState.Builder
         public TStateMachine Build()
         {
             return _machine;
+        }
+
+        public IStateMachineBuilder<TStateMachine, TState, TStimulus> WithUnboundedHistory()
+        {
+            _machine.History.Enabled = true;
+            _machine.History.MakeUnbounded();
+            return this;
+        }
+
+        public IStateMachineBuilder<TStateMachine, TState, TStimulus> WithBoundedHistory(int size)
+        {
+            _machine.History.Enabled = true;
+            _machine.History.MakeBounded(size);
+            return this;
         }
     }
 }

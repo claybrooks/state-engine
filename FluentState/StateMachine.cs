@@ -1,11 +1,12 @@
-﻿using System;
+﻿using FluentState.History;
+using System;
 using System.Collections.Generic;
 
 namespace FluentState
 {
     public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
-        where TState : notnull
-        where TStimulus : notnull
+        where TState : struct
+        where TStimulus : struct
     {
         private readonly List<Action<TState, TState, TStimulus>> _globalEnterActions = new List<Action<TState, TState, TStimulus>>();
         private readonly List<Action<TState, TState, TStimulus>> _globalLeaveActions = new List<Action<TState, TState, TStimulus>>();
@@ -15,33 +16,38 @@ namespace FluentState
         private readonly Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>> _statePairAndStimulusLeaveActions = new Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>>();
         private readonly Dictionary<TState, IDictionary<TStimulus,TState>> _stateTransitions = new Dictionary<TState, IDictionary<TStimulus, TState>>();
         private readonly Dictionary<Tuple<TState, TState, TStimulus>, Func<TState, TState, TStimulus, bool>> _stateTransitionGuards = new Dictionary<Tuple<TState, TState, TStimulus>, Func<TState, TState, TStimulus, bool>>();
+        
+        private readonly IStateMachineHistory<TState, TStimulus> _history;
 
         public StateMachine(TState initialState)
         {
             CurrentState = initialState;
+            _history = new StateMachineHistory<TState, TStimulus>();
         }
 
         public TState CurrentState { get; private set; }
+
+        public IStateMachineHistory<TState, TStimulus> History => _history;
 
         public void OverrideState(TState state)
         {
             CurrentState = state;
         }
 
-        public bool AddTransitionGuard(TState fromState, TState toState, TStimulus when, Func<TState, TState, TStimulus, bool> guard)
+        public bool AddTransitionGuard(TState enteringState, TState leavingState,TStimulus when, Func<TState, TState, TStimulus, bool> guard)
         {
-            var key = Tuple.Create(fromState, toState, when);
+            var key = Tuple.Create(leavingState, enteringState, when);
             return _stateTransitionGuards.TryAdd(key, guard);
         }
 
-        public bool AddTransition(TState fromState, TState toState, TStimulus when)
+        public bool AddTransition(TState enteringState, TState leavingState, TStimulus when)
         {
-            if (!_stateTransitions.ContainsKey(fromState))
+            if (!_stateTransitions.ContainsKey(leavingState))
             {
-                _stateTransitions.Add(fromState, new Dictionary<TStimulus, TState>());
+                _stateTransitions.Add(leavingState, new Dictionary<TStimulus, TState>());
             }
 
-            return _stateTransitions[fromState].TryAdd(when, toState);
+            return _stateTransitions[leavingState].TryAdd(when, enteringState);
         }
 
         public void AddStateEnterAction(Action<TState, TState, TStimulus> action)
@@ -83,7 +89,7 @@ namespace FluentState
             _stateWideLeaveActions[state].Add(action);
         }
 
-        public void AddStateLeaveAction(TState leavingState, TState enteringState, TStimulus reason, Action<TState, TState, TStimulus> action)
+        public void AddStateLeaveAction(TState enteringState, TState leavingState, TStimulus reason, Action<TState, TState, TStimulus> action)
         {
             var key = Tuple.Create(leavingState, enteringState, reason);
 
@@ -113,7 +119,9 @@ namespace FluentState
                 return false;
             }
 
-            TriggerStateLeaveActions(CurrentState, nextState, stimulus);
+            _history.Add(nextState, CurrentState, stimulus);
+
+            TriggerStateLeaveActions(nextState, CurrentState, stimulus);
             TState previousState = CurrentState;
             CurrentState = nextState;
             TriggerStateEnterActions(nextState, previousState, stimulus);
@@ -134,6 +142,7 @@ namespace FluentState
             return _stateTransitionGuards[guardKey](from, to, reason);
         }
         #endregion
+       
         #region Private
 
         private bool TryGetNextState(TState currentState, TStimulus stimulus, out TState nextState)
@@ -156,23 +165,23 @@ namespace FluentState
 
         private void TriggerStateEnterActions(TState enteringState, TState leavingState, TStimulus reason)
         {
-            var actionParams = (leavingState, enteringState, reason);
+            var actionParams = (enteringState, leavingState, reason);
 
             TriggerActions(_globalEnterActions, actionParams);
             TriggerActions(_stateWideEnterActions, enteringState, actionParams);
             TriggerActions(_statePairAndStimulusEnterActions, actionParams.ToTuple(), actionParams);
         }
 
-        private void TriggerStateLeaveActions(TState leavingState, TState enteringState, TStimulus reason)
+        private void TriggerStateLeaveActions(TState enteringState, TState leavingState, TStimulus reason)
         {
-            var actionParams = (leavingState, enteringState, reason);
+            var actionParams = (enteringState, leavingState, reason);
 
             TriggerActions(_globalLeaveActions, actionParams);
             TriggerActions(_stateWideLeaveActions, leavingState, actionParams);
             TriggerActions(_statePairAndStimulusLeaveActions, actionParams.ToTuple(), actionParams);
         }
 
-        private static void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState from, TState to, TStimulus reason) actionParams) 
+        private static void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState enteringState, TState leavingState, TStimulus reason) actionParams) 
             where TKey : notnull
         {
             if (actionMap.ContainsKey(key))
@@ -181,11 +190,11 @@ namespace FluentState
             }
         }
 
-        private static void TriggerActions(IEnumerable<Action<TState, TState, TStimulus>> actions, (TState from, TState to, TStimulus reason) actionParams)
+        private static void TriggerActions(IEnumerable<Action<TState, TState, TStimulus>> actions, (TState enteringState, TState leavingState, TStimulus reason) actionParams)
         {
             foreach (var action in actions)
             {
-                action(actionParams.from, actionParams.to, actionParams.reason);
+                action(actionParams.enteringState, actionParams.leavingState, actionParams.reason);
             }
         }
 
