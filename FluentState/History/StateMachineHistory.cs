@@ -39,6 +39,7 @@ namespace FluentState.History
             {
                 return;
             }
+
             TrimToSize();
             _history.Enqueue(historyItem);
         }
