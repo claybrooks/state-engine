@@ -12,9 +12,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
     <PackageTags>fluent;statemachine;state;machine</PackageTags>
-    <PackageReleaseNotes>Added transition guards</PackageReleaseNotes>
+    <PackageReleaseNotes>Added history and serialization</PackageReleaseNotes>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
