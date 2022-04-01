@@ -12,12 +12,11 @@ namespace FluentState
     {
         private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
         private readonly Thread _stimulusProcessingThread;
-        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationTokenSource _internalThreadCancellationTokenSource = new CancellationTokenSource();
 
         public AsyncStateMachine(TState initialState) : base(initialState)
         {
-            _cancellationTokenSource = new CancellationTokenSource();
-            _stimulusProcessingThread = new Thread(() => { ProcessStimuli(_cancellationTokenSource.Token); })
+            _stimulusProcessingThread = new Thread(() => { ProcessStimuli(_internalThreadCancellationTokenSource.Token); })
             {
                 IsBackground = true
             };
@@ -52,7 +51,7 @@ namespace FluentState
         public void Dispose()
         {
             GC.SuppressFinalize(this);
-            _cancellationTokenSource.Cancel();
+            _internalThreadCancellationTokenSource.Cancel();
         }
 
         #region Private
@@ -64,7 +63,7 @@ namespace FluentState
                 try
                 {
                     while (await _stimulusChannel.Reader.WaitToReadAsync(cancelToken))
-                    { 
+                    {
                         var next = await _stimulusChannel.Reader.ReadAsync(cancelToken);
                         base.Post(next);
                     }

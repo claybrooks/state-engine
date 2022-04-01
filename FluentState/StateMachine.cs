@@ -8,21 +8,36 @@ namespace FluentState
         where TState : struct
         where TStimulus : struct
     {
+        // Actions to be run whenever any state is entered
         private readonly List<Action<TState, TState, TStimulus>> _globalEnterActions = new List<Action<TState, TState, TStimulus>>();
+
+        // Actions to be run whenever any state is left
         private readonly List<Action<TState, TState, TStimulus>> _globalLeaveActions = new List<Action<TState, TState, TStimulus>>();
+
+        // Actions to be run whenever a specific state is entered, regardless of the previous state or why the transition happened
         private readonly Dictionary<TState, IList<Action<TState, TState, TStimulus>>> _stateWideEnterActions = new Dictionary<TState, IList<Action<TState, TState, TStimulus>>>();
+
+        // Actions to be run whenever a specific state is left, regardless of the previous state or why the transition happened
         private readonly Dictionary<TState, IList<Action<TState, TState, TStimulus>>> _stateWideLeaveActions = new Dictionary<TState, IList<Action<TState, TState, TStimulus>>>();
+
+        // Actions to be run whenever a specific state is entered, depending on it's previous state and why the transition happened
         private readonly Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>> _statePairAndStimulusEnterActions = new Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>>();
+
+        // Actions to be run whenever a specific state is left, depending on it's next state and why the transition happened
         private readonly Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>> _statePairAndStimulusLeaveActions = new Dictionary<Tuple<TState, TState, TStimulus>, IList<Action<TState, TState, TStimulus>>>();
-        private readonly Dictionary<TState, IDictionary<TStimulus,TState>> _stateTransitions = new Dictionary<TState, IDictionary<TStimulus, TState>>();
+
+        // All of the allowable state transition pairs, coupled with the stimulus that triggers the transition
+        private readonly Dictionary<TState, IDictionary<TStimulus, TState>> _stateTransitions = new Dictionary<TState, IDictionary<TStimulus, TState>>();
+
+        // Guards to be invoked whenever a state transition happens for a specific reason
         private readonly Dictionary<Tuple<TState, TState, TStimulus>, Func<TState, TState, TStimulus, bool>> _stateTransitionGuards = new Dictionary<Tuple<TState, TState, TStimulus>, Func<TState, TState, TStimulus, bool>>();
-        
-        private readonly IStateMachineHistory<TState, TStimulus> _history;
+
+        // Optional history tracking of this state machine
+        private readonly IStateMachineHistory<TState, TStimulus> _history = new StateMachineHistory<TState, TStimulus>();
 
         public StateMachine(TState initialState)
         {
             CurrentState = initialState;
-            _history = new StateMachineHistory<TState, TStimulus>();
         }
 
         public TState CurrentState { get; private set; }
@@ -34,7 +49,7 @@ namespace FluentState
             CurrentState = state;
         }
 
-        public bool AddTransitionGuard(TState enteringState, TState leavingState,TStimulus when, Func<TState, TState, TStimulus, bool> guard)
+        public bool AddTransitionGuard(TState enteringState, TState leavingState, TStimulus when, Func<TState, TState, TStimulus, bool> guard)
         {
             var key = Tuple.Create(leavingState, enteringState, when);
             return _stateTransitionGuards.TryAdd(key, guard);
@@ -142,7 +157,7 @@ namespace FluentState
             return _stateTransitionGuards[guardKey](from, to, reason);
         }
         #endregion
-       
+
         #region Private
 
         private bool TryGetNextState(TState currentState, TStimulus stimulus, out TState nextState)
@@ -181,7 +196,7 @@ namespace FluentState
             TriggerActions(_statePairAndStimulusLeaveActions, actionParams.ToTuple(), actionParams);
         }
 
-        private static void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState enteringState, TState leavingState, TStimulus reason) actionParams) 
+        private static void TriggerActions<TKey>(IReadOnlyDictionary<TKey, IList<Action<TState, TState, TStimulus>>> actionMap, TKey key, (TState enteringState, TState leavingState, TStimulus reason) actionParams)
             where TKey : notnull
         {
             if (actionMap.ContainsKey(key))

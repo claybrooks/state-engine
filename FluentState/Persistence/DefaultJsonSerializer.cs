@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace FluentState.Persistence
 {
-    public class DefaultJsonSerializer<TState, TStimulus> : ISerializer<TState, TStimulus>
+    public class DefaultJsonSerializer<TState, TStimulus> : IStateMachineSerializer<TState, TStimulus>
         where TState : struct
         where TStimulus : struct
     {
-        private readonly IStateTypeConverter<TState> _stateTypeConverter;
-        private readonly IStimulusTypeConverter<TStimulus> _stimulusTypeConverter;
+        private readonly ITypeSerializer<TState> _stateTypeConverter;
+        private readonly ITypeSerializer<TStimulus> _stimulusTypeConverter;
 
-        public DefaultJsonSerializer(IStateTypeConverter<TState> stateTypeConverter, IStimulusTypeConverter<TStimulus> stimulusTypeConverter)
+        public DefaultJsonSerializer(ITypeSerializer<TState> stateTypeConverter, ITypeSerializer<TStimulus> stimulusTypeConverter)
         {
             _stateTypeConverter = stateTypeConverter;
             _stimulusTypeConverter = stimulusTypeConverter;

@@ -21,7 +21,7 @@ namespace Tester
         Crouch,
     }
 
-    public class StateTypeConverter : IStateTypeConverter<State>
+    public class StateTypeConverter : ITypeSerializer<State>
     {
         public State? Convert(string stateString)
         {
@@ -36,7 +36,7 @@ namespace Tester
             return state.ToString();
         }
     }
-    public class StimulusTypeConverter : IStimulusTypeConverter<Stimulus>
+    public class StimulusTypeConverter : ITypeSerializer<Stimulus>
     {
         public Stimulus? Convert(string stimulusString)
         {
