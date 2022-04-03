@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using FluentState.Machine;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FluentState.Persistence

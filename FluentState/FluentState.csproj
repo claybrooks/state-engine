@@ -12,9 +12,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
     <PackageTags>fluent;statemachine;state;machine</PackageTags>
-    <PackageReleaseNotes>Documentation updates</PackageReleaseNotes>
+    <PackageReleaseNotes>Added ability to define state machines in config files,  See IConfigLoader and JsonConfigLoader</PackageReleaseNotes>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <Version>1.1.2</Version>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

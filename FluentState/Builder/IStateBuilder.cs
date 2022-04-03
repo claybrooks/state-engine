@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FluentState.Machine;
+using System;
 using System.Collections.Generic;
 
 namespace FluentState.Builder
@@ -9,26 +10,20 @@ namespace FluentState.Builder
         where TStimulus : struct
     {
         /// <summary>
-        /// Register a state transition pair.  The provided actions and guards will be applied if provided.
+        /// Register a state transition pair.
         /// </summary>
-        /// <remarks>
-        /// It is up to the implemenation to decide whether to register the actions on leaving the current state or entering <paramref name="enteringState"/>.
-        /// 
-        /// The guards will always be run prior to the transition.
-        /// 
-        /// See <see cref="IStateMachine{TState, TStimulus}.AddTransitionGuard(TState, TState, TStimulus, Func{TState, TState, TStimulus, bool})"/> for details on how transition guards
-        /// are used.
-        /// </remarks>
         /// <param name="enteringState"></param>
         /// <param name="reason"></param>
-        /// <param name="actions"></param>
         /// <param name="guards"></param>
+        /// <param name="enterActions"></param>
+        /// <param name="leaveActions"></param>
         /// <returns></returns>
         IStateBuilder<TStateMachine, TState, TStimulus> WithTransitionTo(
             TState enteringState,
             TStimulus reason,
-            IEnumerable<Action<TState, TState, TStimulus>>? actions = null,
-            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null
+            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null,
+            IEnumerable<Action<TState, TState, TStimulus>>? enterActions = null,
+            IEnumerable<Action<TState, TState, TStimulus>>? leaveActions = null
         );
 
         /// <summary>

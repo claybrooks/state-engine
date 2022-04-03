@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace FluentState
+namespace FluentState.Machine
 {
     public class AsyncStateMachine<TState, TStimulus> : StateMachine<TState, TStimulus>, IAsyncStateMachine<TState, TStimulus>
         where TState : struct

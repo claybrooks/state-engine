@@ -1,4 +1,6 @@
-﻿namespace FluentState.Builder
+﻿using FluentState.Machine;
+
+namespace FluentState.Builder
 {
     public class AsyncStateMachineBuilder<TState, TStimulus> : TStateMachineBuilder<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
         where TState : struct

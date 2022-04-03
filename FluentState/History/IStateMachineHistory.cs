@@ -13,11 +13,6 @@ namespace FluentState.History
         public DateTime When;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <typeparam name="TState"></typeparam>
-    /// <typeparam name="TStimulus"></typeparam>
     public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<HistoryItem<TState, TStimulus>>
         where TState : struct
         where TStimulus : struct

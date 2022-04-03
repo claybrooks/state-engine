@@ -5,6 +5,7 @@ namespace Tester
 {
     public enum State
     {
+        Invalid,
         Idle,
         Walking,
         Running,
@@ -51,4 +52,23 @@ namespace Tester
             return state.ToString();
         }
     }
+
+    public class ActionProvider : FluentState.Config.IActionProvider<State, Stimulus>
+    {
+        public readonly Dictionary<string, Action<State, State, Stimulus>> Actions = new Dictionary<string, Action<State, State, Stimulus>>();
+        public Action<State, State, Stimulus> Get(string key)
+        {
+            return Actions[key];
+        }
+    }
+
+    public class GuardProvider : FluentState.Config.IGuardProvider<State, Stimulus>
+    {
+        public readonly Dictionary<string, Func<State, State, Stimulus, bool>> Guards = new Dictionary<string, Func<State, State, Stimulus, bool>>();
+        public Func<State, State, Stimulus, bool> Get(string key)
+        {
+            return Guards[key];
+        }
+    }
+
 }

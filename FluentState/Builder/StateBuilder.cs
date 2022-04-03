@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FluentState.Machine;
+using System;
 using System.Collections.Generic;
 
 namespace FluentState.Builder
@@ -18,30 +19,30 @@ namespace FluentState.Builder
 
         }
 
-        /// <summary>
-        /// The provided actions are registered to be called when entering the provided <typeparamref name="TState"/>.
-        /// </summary>
-        /// <inheritdoc/>
-        /// <param name="enteringState"></param>
-        /// <param name="reason"></param>
-        /// <param name="actions"></param>
-        /// <param name="guards"></param>
-        /// <returns></returns>
         public IStateBuilder<TStateMachine, TState, TStimulus> WithTransitionTo(
             TState enteringState,
             TStimulus reason,
-            IEnumerable<Action<TState, TState, TStimulus>>? actions = null,
-            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null
+            IEnumerable<Func<TState, TState, TStimulus, bool>>? guards = null,
+            IEnumerable<Action<TState, TState, TStimulus>>? enterActions = null,
+            IEnumerable<Action<TState, TState, TStimulus>>? leaveActions = null
         )
         {
             var machine = _machineBuilder.Machine;
 
             machine.AddTransition(enteringState, _state, reason);
-            if (actions != null)
+            if (enterActions != null)
             {
-                foreach(var action in actions)
+                foreach(var action in enterActions)
                 {
                     machine.AddStateEnterAction(enteringState, _state, reason, action);
+                }
+            }
+
+            if (leaveActions != null)
+            {
+                foreach (var action in leaveActions)
+                {
+                    machine.AddStateLeaveAction(enteringState, _state, reason, action);
                 }
             }
 

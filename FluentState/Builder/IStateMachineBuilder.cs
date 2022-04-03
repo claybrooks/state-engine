@@ -1,4 +1,6 @@
-﻿using System;
+﻿using FluentState.Config;
+using FluentState.Machine;
+using System;
 
 namespace FluentState.Builder
 {
@@ -54,6 +56,17 @@ namespace FluentState.Builder
         /// <param name="size"></param>
         /// <returns></returns>
         IStateMachineBuilder<TStateMachine, TState, TStimulus> WithBoundedHistory(int size);
+
+        /// <summary>
+        /// Loads the data from provided <see cref="IConfigLoader{TState, TStimulus}"/>.
+        /// </summary>
+        /// <remarks>
+        /// Typically this should be called first when using a builder.  If it's called after other methods are called, this will
+        /// override anything currently set.  The typical usage is you load the config first, then override on a case by case basis.
+        /// </remarks>
+        /// <param name="loader"></param>
+        /// <returns></returns>
+        IStateMachineBuilder<TStateMachine, TState, TStimulus> WithConfig(IConfigLoader<TState, TStimulus> loader);
 
         /// <summary>
         /// End configuring <typeparamref name="TStateMachine"/>

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace FluentState
+namespace FluentState.Machine
 {
     public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
         where TState : struct
@@ -106,7 +106,7 @@ namespace FluentState
 
         public void AddStateLeaveAction(TState enteringState, TState leavingState, TStimulus reason, Action<TState, TState, TStimulus> action)
         {
-            var key = Tuple.Create(leavingState, enteringState, reason);
+            var key = Tuple.Create(enteringState, leavingState, reason);
 
             if (!_statePairAndStimulusLeaveActions.ContainsKey(key))
             {

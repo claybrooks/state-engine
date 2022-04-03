@@ -1,4 +1,5 @@
 ﻿using FluentState.History;
+using FluentState.Machine;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;

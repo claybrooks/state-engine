@@ -1,4 +1,6 @@
-﻿using System;
+﻿using FluentState.Config;
+using FluentState.Machine;
+using System;
 
 namespace FluentState.Builder
 {
@@ -23,7 +25,7 @@ namespace FluentState.Builder
 
         public IStateBuilder<TStateMachine, TState, TStimulus> WithState(TState from)
         {
-            return new StateBuilder<TStateMachine, TState, TStimulus> (this, from);
+            return new StateBuilder<TStateMachine, TState, TStimulus>(this, from);
         }
 
         public IStateMachineBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<TState, TState, TStimulus> action)
@@ -56,5 +58,69 @@ namespace FluentState.Builder
             _machine.History.MakeBounded(size);
             return this;
         }
+
+        public IStateMachineBuilder<TStateMachine, TState, TStimulus> WithConfig(IConfigLoader<TState, TStimulus> loader)
+        {
+            Load(loader);
+            return this;
+        }
+
+        #region Private Config Building
+
+        private void Load(IConfigLoader<TState, TStimulus> loader)
+        {
+            Machine.OverrideState(loader.InitialState);
+            LoadGlobalActions(loader);
+            LoadStates(loader);
+        }
+
+        private void LoadGlobalActions(IConfigLoader<TState, TStimulus> loader)
+        {
+            foreach (var enterAction in loader.GlobalEnterActions)
+            {
+                WithEnterAction(enterAction);
+            }
+
+            foreach (var leaveAction in loader.GlobalLeaveActions)
+            {
+                WithLeaveAction(leaveAction);
+            }
+        }
+
+        private void LoadStates(IConfigLoader<TState, TStimulus> loader)
+        {
+            foreach (var stateConfig in loader.States)
+            {
+                LoadState(stateConfig);
+            }
+        }
+
+        private void LoadState(StateConfig<TState, TStimulus> stateConfig)
+        {
+            var stateBuilder = WithState(stateConfig.State);
+
+            foreach (var enterAction in stateConfig.EnterActions)
+            {
+                stateBuilder.WithEnterAction(enterAction);
+            }
+
+            foreach (var leaveAction in stateConfig.LeaveActions)
+            {
+                stateBuilder.WithLeaveAction(leaveAction);
+            }
+
+            foreach (var transition in stateConfig.Transitions)
+            {
+                stateBuilder.WithTransitionTo(
+                   transition.State,
+                   transition.Reason,
+                   transition.Guards,
+                   transition.EnterActions,
+                   transition.LeaveActions
+               );
+            }
+        }
+
+        #endregion
     }
 }

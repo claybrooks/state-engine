@@ -1,7 +1,7 @@
 ﻿using FluentState.History;
 using System;
 
-namespace FluentState
+namespace FluentState.Machine
 {
     public interface IStateMachine<TState, TStimulus>
         where TState : struct
