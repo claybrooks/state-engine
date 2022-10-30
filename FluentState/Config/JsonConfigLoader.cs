@@ -1,5 +1,4 @@
 ﻿using FluentState.Extensions;
-using FluentState.Persistence;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -45,9 +44,9 @@ namespace FluentState.Config
     {
         public TState InitialState { get; private set; }
 
-        private IList<Action<TState, TState, TStimulus>> _globalEnterActions = new List<Action<TState, TState, TStimulus>>();
-        private IList<Action<TState, TState, TStimulus>> _globalLeaveActions = new List<Action<TState, TState, TStimulus>>();
-        private IList<StateConfig<TState, TStimulus>> _states = new List<StateConfig<TState, TStimulus>>();
+        private readonly IList<Action<TState, TState, TStimulus>> _globalEnterActions = new List<Action<TState, TState, TStimulus>>();
+        private readonly IList<Action<TState, TState, TStimulus>> _globalLeaveActions = new List<Action<TState, TState, TStimulus>>();
+        private readonly IList<StateConfig<TState, TStimulus>> _states = new List<StateConfig<TState, TStimulus>>();
 
         public JsonConfigLoader(
             string path,
@@ -81,48 +80,48 @@ namespace FluentState.Config
 
         private void LoadInitialState(JObject data, ITypeSerializer<TState> stateSerializer)
         {
-            var initialState = stateSerializer.Convert(data.Value<string>("initialState") ?? "");
-            if (initialState == null)
+            var initial_state = stateSerializer.Convert(data.Value<string>("initialState") ?? "");
+            if (initial_state == null)
             {
                 throw new InvalidDataException($"Unable to parse initial state from {data}");
             }
 
-            InitialState = initialState.Value;
+            InitialState = initial_state.Value;
         }
 
-        private void LoadGlobalActions(JObject data, IActionProvider<TState, TStimulus> actionProvider)
+        private void LoadGlobalActions(JToken data, IActionProvider<TState, TStimulus> actionProvider)
         {
-            var enterActions = data.NonNullableValues<string>("enterActions");
-            var leaveActions = data.NonNullableValues<string>("leaveActions");
+            var enter_actions = data.NonNullableValues<string>("enterActions");
+            var leave_actions = data.NonNullableValues<string>("leaveActions");
 
-            if (enterActions != null)
+            if (enter_actions != null)
             {
-                foreach (var actionKey in enterActions)
+                foreach (var action_key in enter_actions)
                 {
-                    var action = actionProvider.Get(actionKey);
+                    var action = actionProvider.Get(action_key);
                     if (action == null)
                     {
-                        throw new InvalidDataException($"Unable to get global state machine enter action with key {actionKey}");
+                        throw new InvalidDataException($"Unable to get global state machine enter action with key {action_key}");
                     }
                     _globalEnterActions.Add(action);
                 }
             }
 
-            if (leaveActions != null)
+            if (leave_actions != null)
             {
-                foreach (var actionKey in leaveActions)
+                foreach (var action_key in leave_actions)
                 {
-                    var action = actionProvider.Get(actionKey);
+                    var action = actionProvider.Get(action_key);
                     if (action == null)
                     {
-                        throw new InvalidDataException($"Unable to get global state machine leave action with key {actionKey}");
+                        throw new InvalidDataException($"Unable to get global state machine leave action with key {action_key}");
                     }
                     _globalLeaveActions.Add(action);
                 }
             }
         }
 
-        private void LoadStates(JObject data,
+        private void LoadStates(JToken data,
             ITypeSerializer<TState> stateSerializer,
             ITypeSerializer<TStimulus> stimulusSerializer,
             IActionProvider<TState, TStimulus> actionProvider,
@@ -153,25 +152,25 @@ namespace FluentState.Config
                 throw new InvalidDataException($"Unable to retrieve state from {data}");
             }
 
-            var stateConfig = new StateConfig<TState, TStimulus>(state.Value);
+            var state_config = new StateConfig<TState, TStimulus>(state.Value);
 
-            var enterActions = data.NonNullableValues<string>("enterActions");
-            var leaveActions = data.NonNullableValues<string>("leaveActions");
+            var enter_actions = data.NonNullableValues<string>("enterActions");
+            var leave_actions = data.NonNullableValues<string>("leaveActions");
             var transitions = data.NonNullableValues<JObject>("transitions");
 
-            if (enterActions != null)
+            if (enter_actions != null)
             {
-                foreach (var actionKey in enterActions)
+                foreach (var action_key in enter_actions)
                 {
-                    stateConfig.EnterActions.Add(actionProvider.Get(actionKey));
+                    state_config.EnterActions.Add(actionProvider.Get(action_key));
                 }
             }
 
-            if (leaveActions != null)
+            if (leave_actions != null)
             {
-                foreach (var actionKey in leaveActions)
+                foreach (var action_key in leave_actions)
                 {
-                    stateConfig.LeaveActions.Add(actionProvider.Get(actionKey));
+                    state_config.LeaveActions.Add(actionProvider.Get(action_key));
                 }
             }
 
@@ -179,14 +178,14 @@ namespace FluentState.Config
             {
                 foreach (var transition in transitions)
                 {
-                    stateConfig.Transitions.Add(LoadTransition(transition, stateSerializer, stimulusSerializer, actionProvider, guardProvider));
+                    state_config.Transitions.Add(LoadTransition(transition, stateSerializer, stimulusSerializer, actionProvider, guardProvider));
                 }
             }
 
-            return stateConfig;
+            return state_config;
         }
 
-        private TransitionConfig<TState, TStimulus> LoadTransition(
+        private static TransitionConfig<TState, TStimulus> LoadTransition(
             JToken data,
             ITypeSerializer<TState> stateSerializer,
             ITypeSerializer<TStimulus> stimulusSerializer,
@@ -204,25 +203,25 @@ namespace FluentState.Config
                 throw new InvalidDataException($"Unable to retrieve stimulus from {data}");
             }
 
-            var transitionConfig = new TransitionConfig<TState, TStimulus>(state.Value, stimulus.Value);
+            var transition_config = new TransitionConfig<TState, TStimulus>(state.Value, stimulus.Value);
 
-            var enterActions = data.NonNullableValues<string>("enterActions");
-            var leaveActions = data.NonNullableValues<string>("leaveActions");
+            var enter_actions = data.NonNullableValues<string>("enterActions");
+            var leave_actions = data.NonNullableValues<string>("leaveActions");
             var guards = data.NonNullableValues<string>("guards");
 
-            if (enterActions != null)
+            if (enter_actions != null)
             {
-                foreach (var actionKey in enterActions)
+                foreach (var action_key in enter_actions)
                 {
-                    transitionConfig.EnterActions.Add(actionProvider.Get(actionKey));
+                    transition_config.EnterActions.Add(actionProvider.Get(action_key));
                 }
             }
 
-            if (leaveActions != null)
+            if (leave_actions != null)
             {
-                foreach (var actionKey in leaveActions)
+                foreach (var action_key in leave_actions)
                 {
-                    transitionConfig.LeaveActions.Add(actionProvider.Get(actionKey));
+                    transition_config.LeaveActions.Add(actionProvider.Get(action_key));
                 }
             }
 
@@ -230,11 +229,11 @@ namespace FluentState.Config
             {
                 foreach (var guard in guards)
                 {
-                    transitionConfig.Guards.Add(guardProvider.Get(guard));
+                    transition_config.Guards.Add(guardProvider.Get(guard));
                 }
             }
 
-            return transitionConfig;
+            return transition_config;
         }
 
         #endregion

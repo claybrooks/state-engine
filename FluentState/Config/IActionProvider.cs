@@ -2,7 +2,7 @@
 
 namespace FluentState.Config
 {
-    public interface IActionProvider<TState, TStimulus>
+    public interface IActionProvider<in TState, in TStimulus>
         where TState : struct
         where TStimulus : struct
     {

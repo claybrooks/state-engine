@@ -1,4 +1,4 @@
-﻿namespace FluentState.Persistence
+﻿namespace FluentState.Config
 {
     public interface ITypeSerializer<TType>
         where TType : struct

@@ -2,7 +2,7 @@
 
 namespace FluentState.Config
 {
-    public interface IGuardProvider<TState, TStimulus>
+    public interface IGuardProvider<in TState, in TStimulus>
         where TState : struct
         where TStimulus : struct
     {
