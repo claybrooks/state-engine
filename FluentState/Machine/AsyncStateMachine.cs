@@ -51,11 +51,11 @@ public sealed class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TS
     }
 
     #region Forward To Synchronous Machine
+
     public bool ThrowExceptionOnFailedTransition { get => _stateMachine.ThrowExceptionOnFailedTransition; set => _stateMachine.ThrowExceptionOnFailedTransition = value; }
     public bool ThrowExceptionOnSameStateTransition { get => _stateMachine.ThrowExceptionOnSameStateTransition; set=> _stateMachine.ThrowExceptionOnSameStateTransition = value; }
     public TState CurrentState => _stateMachine.CurrentState;
     public IEnumerable<HistoryItem<TState, TStimulus>> History => _stateMachine.History;
-    public void OverrideState(TState state) => _stateMachine.OverrideState(state);
 
     #endregion
 

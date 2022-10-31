@@ -9,26 +9,18 @@ public interface IStateMachine<TState, TStimulus>
     where TStimulus : struct
 {
     /// <summary>
-    /// This does not consider failed transitions do to guard calls.  Only when there is no destination state based on
-    /// <see cref="SynchronousStateMachine{TState,TStimulus}.CurrentState"/> and the provided stimulus
+    /// This does not consider failed transitions due to guard calls.  Only when there is no destination state based on
+    /// <see cref="SynchronousStateMachine{TState,TStimulus}.CurrentState"/> and the provided <typeparamref name="TStimulus"/>
     /// </summary>
     bool ThrowExceptionOnFailedTransition { get; set; }
 
+    /// <summary>
+    /// Should most likely be turned off outside of development.  Helpful in determining possible bugs in your state machine
+    /// setup
+    /// </summary>
     bool ThrowExceptionOnSameStateTransition { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     TState CurrentState { get; }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     IEnumerable<HistoryItem<TState, TStimulus>> History { get; }
-
-    /// <summary>
-    /// Forcefully sets the state of the state machine.  No actions will trigger
-    /// </summary>
-    /// <param name="state"></param>
-    void OverrideState(TState state);
 }

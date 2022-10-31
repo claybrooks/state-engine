@@ -67,11 +67,6 @@ public sealed class SynchronousStateMachine<TState, TStimulus> : ISynchronousSta
 
     public IEnumerable<HistoryItem<TState, TStimulus>> History => _history;
 
-    public void OverrideState(TState state)
-    {
-        CurrentState = state;
-    }
-
     public bool Post(TStimulus stimulus)
     {
         // Unable to get the next state with the supplied stimulus
