@@ -173,7 +173,7 @@ public interface IStateBuilder<TState, TStimulus>
     IStateBuilder<TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, IAction<TState, TStimulus> action);
 }
 
-public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
+public sealed class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

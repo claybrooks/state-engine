@@ -4,7 +4,7 @@ using System;
 
 namespace FluentState.Builder;
 
-public interface IBuilder<TStateMachine, TState, TStimulus>
+public interface IBuilder<out TStateMachine, TState, TStimulus>
     where TStateMachine : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct

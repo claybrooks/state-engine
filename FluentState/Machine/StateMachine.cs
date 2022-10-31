@@ -6,7 +6,7 @@ using FluentState.MachineParts;
 
 namespace FluentState.Machine;
 
-public class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -15,7 +15,7 @@ public class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TStat
     }
 }
 
-public class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<StateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<StateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -27,7 +27,7 @@ public class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<State
     }
 }
 
-public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
+public sealed class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

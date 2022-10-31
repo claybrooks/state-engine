@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using FluentState.Builder;
 using FluentState.History;
@@ -9,7 +9,7 @@ using FluentState.MachineParts;
 
 namespace FluentState.Machine;
 
-public class AsyncStateMachineBuilder<TState, TStimulus> : Builder<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class AsyncStateMachineBuilder<TState, TStimulus> : Builder<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -18,7 +18,7 @@ public class AsyncStateMachineBuilder<TState, TStimulus> : Builder<AsyncStateMac
     }
 }
 
-public class AsyncStateMachineFactory<TState, TStimulus> : IStateMachineFactory<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class AsyncStateMachineFactory<TState, TStimulus> : IStateMachineFactory<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -29,7 +29,7 @@ public class AsyncStateMachineFactory<TState, TStimulus> : IStateMachineFactory<
     }
 }
 
-public class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, TStimulus>
+public sealed class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -37,7 +37,7 @@ public class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, T
     private readonly IStateMachine<TState, TStimulus> _stateMachine;
 
     // Queue for holding stimuli
-    private readonly ConcurrentQueue<TStimulus> _stimulusQueue = new();
+    private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Task _queueProcessingTask;
 
@@ -67,10 +67,10 @@ public class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, T
 
     #region Async API
     
-    public Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
+    public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
     {
-        _stimulusQueue.Enqueue(stimulus);
-        return Task.FromResult(true);
+        await _stimulusChannel.Writer.WriteAsync(stimulus, token);
+        return true;
     }
 
     public async Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken token = default)
@@ -86,11 +86,11 @@ public class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, T
 
     public async Task AwaitIdleAsync(CancellationToken token = default)
     {
-        var idler = Task.Factory.StartNew(() =>
+        var idler = Task.Factory.StartNew(async () =>
         {
-            while (!_stimulusQueue.IsEmpty)
+            while (_stimulusChannel.Reader.Count != 0)
             {
-
+                await Task.Delay(TimeSpan.FromMilliseconds(1), token);
             }
         }, token);
         await idler;
@@ -115,13 +115,8 @@ public class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, T
         {
             try
             {
-                while (_stimulusQueue.TryDequeue(out var stimulus))
-                {
-                    _stateMachine.Post(stimulus);
-                }
-
-                // So we don't chew up a thread
-                await Task.Delay(TimeSpan.FromMilliseconds(1), token);
+                var next = await _stimulusChannel.Reader.ReadAsync(token);
+                _stateMachine.Post(next);
             }
             catch (TaskCanceledException)
             {
