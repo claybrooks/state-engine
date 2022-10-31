@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using FluentState.MachineParts;
-using static System.Collections.Specialized.BitVector32;
 
 namespace FluentState.Builder;
 
