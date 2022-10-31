@@ -6,7 +6,7 @@ using FluentState.MachineParts;
 
 namespace FluentState.Machine;
 
-public class StateMachineBuilder<TState, TStimulus> : Builder<TState, TStimulus>
+public class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -15,9 +15,11 @@ public class StateMachineBuilder<TState, TStimulus> : Builder<TState, TStimulus>
     }
 }
 
-public class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<TState, TStimulus> where TState : struct where TStimulus : struct
+public class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<StateMachine<TState, TStimulus>, TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
-    public FluentState.IStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
+    public StateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
     {
         return new StateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
@@ -25,7 +27,7 @@ public class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<TStat
     }
 }
 
-public class StateMachine<TState, TStimulus> : FluentState.IStateMachine<TState, TStimulus>
+public class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

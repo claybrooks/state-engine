@@ -8,11 +8,10 @@ void PlayQuickStopAction(Transition<State, Stimulus> transition)
     Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
 }
 
-var state_machine = new StateMachineBuilder<State, Stimulus>(State.Idle)
+var state_machine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithUnboundedHistory()
-    .WithEnterAction(transition => { Console.WriteLine($"Entering {transition.To}"); })
+    .WithEnterAction<DebugTransition>()
     .WithEnterAction(new AnimationAction())
-    .WithLeaveAction(transition => { Console.WriteLine($"Leaving {transition.From}"); })
     .WithState(State.Idle, sb =>
     {
         sb.CanTransitionTo(State.Walking, Stimulus.Walk)
@@ -58,19 +57,19 @@ do
     switch (key)
     {
         case ConsoleKey.W:
-            state_machine.Post(Stimulus.Walk);
+            await state_machine.PostAsync(Stimulus.Walk);
             break;
         case ConsoleKey.C:
-            state_machine.Post(Stimulus.Crouch);
+            await state_machine.PostAsync(Stimulus.Crouch);
             break;
         case ConsoleKey.R:
-            state_machine.Post(Stimulus.Run);
+            await state_machine.PostAsync(Stimulus.Run);
             break;
         case ConsoleKey.S:
-            state_machine.Post(Stimulus.Stop);
+            await state_machine.PostAsync(Stimulus.Stop);
             break;
         case ConsoleKey.Q:
-            state_machine.Post(Stimulus.QuickStop);
+            await state_machine.PostAsync(Stimulus.QuickStop);
             break;
     }
 
@@ -79,39 +78,46 @@ do
 //var serializer = new FluentState.Persistence.JsonSerializer<State, Stimulus>(new StateTypeConverter(), new StimulusTypeConverter());
 //await serializer.Save(state_machine, "stateMachine.json");
 
-state_machine.Post(Stimulus.Walk);
-state_machine.Post(Stimulus.Crouch);
-state_machine.Post(Stimulus.Stop);
-state_machine.Post(Stimulus.Stop);
-state_machine.Post(Stimulus.Run);
-state_machine.Post(Stimulus.QuickStop);
-state_machine.Post(Stimulus.Crouch);
-state_machine.Post(Stimulus.Walk);
-state_machine.Post(Stimulus.Stop);
-state_machine.Post(Stimulus.Stop);
+await state_machine.PostAsync(Stimulus.Walk);
+await state_machine.PostAsync(Stimulus.Crouch);
+await state_machine.PostAsync(Stimulus.Stop);
+await state_machine.PostAsync(Stimulus.Stop);
+await state_machine.PostAsync(Stimulus.Run);
+await state_machine.PostAsync(Stimulus.QuickStop);
+await state_machine.PostAsync(Stimulus.Crouch);
+await state_machine.PostAsync(Stimulus.Walk);
+await state_machine.PostAsync(Stimulus.Stop);
+await state_machine.PostAsync(Stimulus.Stop);
 
-namespace Tester
+await state_machine.DisposeAsync();
+
+public class AnimationAction : IAction<State, Stimulus>
 {
-    public class AnimationAction : IAction<State, Stimulus>
+    public void OnTransition(Transition<State, Stimulus> transition)
     {
-        public void OnTransition(Transition<State, Stimulus> transition)
-        {
-            Console.WriteLine($"Playing {transition.From}->{transition.To} animation");
-        }
+        Console.WriteLine($"Playing {transition.From}->{transition.To} animation");
     }
+}
 
-    public class QuickStopGuard : IGuard<State, Stimulus>
+public class DebugTransition: IAction<State, Stimulus>
+{
+    public void OnTransition(Transition<State, Stimulus> transition)
     {
-        private DateTime _dateOfLastQuickStop = DateTime.UnixEpoch;
+        Console.WriteLine($"Leaving {transition.From}, Entering {transition.To}, Because Of {transition.Reason}");
+    }
+}
 
-        public bool Check(Transition<State, Stimulus> transition)
-        { 
-            var success = (DateTime.Now - _dateOfLastQuickStop).TotalSeconds > 5;
-            if (success)
-            {
-                _dateOfLastQuickStop = DateTime.Now;
-            }
-            return success;
+public class QuickStopGuard : IGuard<State, Stimulus>
+{
+    private DateTime _dateOfLastQuickStop = DateTime.UnixEpoch;
+
+    public bool Check(Transition<State, Stimulus> transition)
+    { 
+        var success = (DateTime.Now - _dateOfLastQuickStop).TotalSeconds > 5;
+        if (success)
+        {
+            _dateOfLastQuickStop = DateTime.Now;
         }
+        return success;
     }
 }

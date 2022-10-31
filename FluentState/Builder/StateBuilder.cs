@@ -198,33 +198,27 @@ public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
         _leaveActions = leaveActions;
     }
 
+    #region Transitions
+
     public IStateBuilder<TState, TStimulus> CanTransitionTo(TState to, TStimulus reason, IEnumerable<IAction<TState, TStimulus>>? actions = null, IEnumerable<IGuard<TState, TStimulus>>? guards = null)
     {
-        guards ??= Array.Empty<IGuard<TState, TStimulus>>();
-        actions ??= Array.Empty<IAction<TState, TStimulus>>();
-
         var transition = new Transition<TState, TStimulus> {From = _state, To = to, Reason = reason };
-        _stateMap.Register(transition);
-
-        foreach (var action in actions)
-        {
-            _leaveActions.Register(action);
-        }
-
-        foreach (var guard in guards)
-        {
-            _guard.Register(transition, guard);
-        }
-
+        DoRegisterTransition(transition);
         return this;
     }
 
     public IStateBuilder<TState, TStimulus> CanTransitionFrom(TState from, TStimulus reason, IEnumerable<IAction<TState, TStimulus>>? actions = null, IEnumerable<IGuard<TState, TStimulus>>? guards = null)
     {
+        var transition = new Transition<TState, TStimulus> {From = from, To = _state, Reason = reason };
+        DoRegisterTransition(transition);
+        return this;
+    }
+
+    private void DoRegisterTransition(Transition<TState, TStimulus> transition, IEnumerable<IAction<TState, TStimulus>>? actions = null, IEnumerable<IGuard<TState, TStimulus>>? guards = null)
+    {
         guards ??= Array.Empty<IGuard<TState, TStimulus>>();
         actions ??= Array.Empty<IAction<TState, TStimulus>>();
 
-        var transition = new Transition<TState, TStimulus> {From = from, To = _state, Reason = reason };
         _stateMap.Register(transition);
 
         foreach (var action in actions)
@@ -236,10 +230,10 @@ public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
         {
             _guard.Register(transition, guard);
         }
-
-        return this;
     }
-    
+
+    #endregion
+
     #region Enter Guards
 
     public IStateBuilder<TState, TStimulus> WithEnterGuard(TState from, TStimulus reason, Func<Transition<TState, TStimulus>, bool> guard)

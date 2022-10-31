@@ -5,11 +5,12 @@ using System;
 
 namespace FluentState;
 
-public interface IStateMachineFactory<TState, TStimulus>
+public interface IStateMachineFactory<out TStateMachine, TState, TStimulus>
+    where TStateMachine : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    IStateMachine<TState, TStimulus> Create(TState initialState,
+    TStateMachine Create(TState initialState,
         IActionRegistry<TState, TStimulus> enterActions,
         IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
