@@ -25,7 +25,7 @@ public sealed class AsyncStateMachineFactory<TState, TStimulus> : IStateMachineF
     public AsyncStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new AsyncStateMachine<TState, TStimulus>(new StateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, stateGuard, history));
+        return new AsyncStateMachine<TState, TStimulus>(new SynchronousStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, stateGuard, history));
     }
 }
 
@@ -34,14 +34,14 @@ public sealed class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TS
     where TStimulus : struct
 {
     // Synchronous machine that handles most of the work
-    private readonly IStateMachine<TState, TStimulus> _stateMachine;
+    private readonly ISynchronousStateMachine<TState, TStimulus> _stateMachine;
 
     // Queue for holding stimuli
     private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Task _queueProcessingTask;
 
-    public AsyncStateMachine(IStateMachine<TState, TStimulus> stateMachine)
+    public AsyncStateMachine(ISynchronousStateMachine<TState, TStimulus> stateMachine)
     {
         _stateMachine = stateMachine;
         _queueProcessingTask = Task.Factory.StartNew(async () =>
@@ -58,12 +58,6 @@ public sealed class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TS
     public void OverrideState(TState state) => _stateMachine.OverrideState(state);
 
     #endregion
-
-    // This is hidden because it has little meaning to the async intent of this class.  It would bypass the queue and we don't want that
-    bool IStateMachine<TState, TStimulus>.Post(TStimulus stimulus)
-    {
-        throw new NotImplementedException("This function cannot be called.  Call \"PostAndWaitAsync\" instead");
-    }
 
     #region Async API
     

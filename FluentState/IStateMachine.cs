@@ -10,7 +10,7 @@ public interface IStateMachine<TState, TStimulus>
 {
     /// <summary>
     /// This does not consider failed transitions do to guard calls.  Only when there is no destination state based on
-    /// <see cref="StateMachine{TState,TStimulus}.CurrentState"/> and the provided stimulus
+    /// <see cref="SynchronousStateMachine{TState,TStimulus}.CurrentState"/> and the provided stimulus
     /// </summary>
     bool ThrowExceptionOnFailedTransition { get; set; }
 
@@ -31,11 +31,4 @@ public interface IStateMachine<TState, TStimulus>
     /// </summary>
     /// <param name="state"></param>
     void OverrideState(TState state);
-
-    /// <summary>
-    /// Injects a <see cref="TStimulus"/> into the machine
-    /// </summary>
-    /// <param name="stimulus"></param>
-    /// <returns></returns>
-    bool Post(TStimulus stimulus);
 }
