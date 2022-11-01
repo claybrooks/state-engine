@@ -7,6 +7,7 @@ public enum State
     Running,
     Crouched,
     CrouchWalking,
+    Test
 }
 
 public enum Stimulus

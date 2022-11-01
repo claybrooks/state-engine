@@ -1,6 +1,7 @@
 ﻿using FluentState.History;
 using FluentState.MachineParts;
 using System;
+using FluentState.Validation;
 
 namespace FluentState.Builder;
 
@@ -77,6 +78,19 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// </summary>
     /// <returns></returns>
     TStateMachine Build();
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    IValidationResult Validate(ValidationOptions options);
+    
+    /// <summary>
+    /// Builds the <see cref="IStateMachine{TState,TStimulus}"/>
+    /// </summary>
+    /// <returns></returns>
+    IValidationResult Validate();
 }
 
 public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
@@ -87,10 +101,10 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
     private readonly TState _initialState;
     private readonly IStateMachineFactory<TStateMachine, TState, TStimulus> _factory;
     
-    private readonly StateGuard<TState, TStimulus> _guard = new();
     private readonly StateMap<TState, TStimulus> _stateMap = new();
     private readonly ActionRegistry<TState, TStimulus> _enterActions = new();
     private readonly ActionRegistry<TState, TStimulus> _leaveActions = new();
+    private readonly StateStateGuard<TState, TStimulus> _stateGuard = new();
     private readonly StateMachineHistory<TState, TStimulus> _history = new();
 
     public Builder(TState initialState, IStateMachineFactory<TStateMachine, TState, TStimulus> factory)
@@ -101,7 +115,7 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
 
     public IBuilder<TStateMachine, TState, TStimulus> WithState(TState state, Action<StateBuilder<TState, TStimulus>> configureState)
     {
-        var state_builder = new StateBuilder<TState, TStimulus>(state, _guard, _stateMap, _enterActions, _leaveActions);
+        var state_builder = new StateBuilder<TState, TStimulus>(state, _stateGuard, _stateMap, _enterActions, _leaveActions);
         configureState(state_builder);
         return this;
     }
@@ -159,8 +173,19 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
         return this;
     }
 
+    public IValidationResult Validate()
+    {
+        return Validate(new ValidationOptions());
+    }
+
+    public IValidationResult Validate(ValidationOptions options)
+    {
+        var validator = new Validator<TState, TStimulus>();
+        return validator.Validate(options, _initialState, _stateMap, _enterActions, _leaveActions, _stateGuard);
+    }
+
     public TStateMachine  Build()
     {
-        return _factory.Create(_initialState, _enterActions, _leaveActions, _stateMap, _guard, _history);
+        return _factory.Create(_initialState, _enterActions, _leaveActions, _stateMap, _stateGuard, _history);
     }
 }

@@ -1,11 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FluentState.MachineParts;
 
-public interface IGuard<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface IGuard<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     bool Check(Transition<TState, TStimulus> transition);
+}
+
+public interface IStateGuardValidation<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    IReadOnlyList<Transition<TState, TStimulus>> GuardTransitions { get; }
 }
 
 public class DelegateGuard<TState, TStimulus> : IGuard<TState, TStimulus>
@@ -32,7 +42,9 @@ public interface IStateGuard<TState, TStimulus> where TState : struct where TSti
     bool CheckTransition(Transition<TState, TStimulus> transition);
 }
 
-public class StateGuard<TState, TStimulus> : IStateGuard<TState, TStimulus> where TState : struct where TStimulus : struct
+public class StateStateGuard<TState, TStimulus> : IStateGuard<TState, TStimulus>, IStateGuardValidation<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     private readonly Dictionary<Transition<TState, TStimulus>, IGuard<TState, TStimulus>> _stateTransitionGuards = new(new TransitionComparer<TState, TStimulus>());
 
@@ -55,4 +67,6 @@ public class StateGuard<TState, TStimulus> : IStateGuard<TState, TStimulus> wher
     {
         return !_stateTransitionGuards.TryGetValue(transition, out var guard) || guard.Check(transition);
     }
+
+    public IReadOnlyList<Transition<TState, TStimulus>> GuardTransitions => _stateTransitionGuards.Keys.ToList();
 }

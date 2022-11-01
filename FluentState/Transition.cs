@@ -8,6 +8,11 @@ public class Transition<TState, TStimulus> where TState : struct where TStimulus
     public TState From { get; init; }
     public TState To { get; init; }
     public TStimulus Reason { get; init; }
+
+    public override string ToString()
+    {
+        return $"From: {From}, To: {To}, Reason: {Reason}";
+    }
 }
 
 public class TransitionComparer<TState, TStimulus> : IEqualityComparer<Transition<TState, TStimulus>> where TState : struct where TStimulus : struct

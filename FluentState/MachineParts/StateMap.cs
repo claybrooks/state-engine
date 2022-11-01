@@ -1,14 +1,29 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace FluentState.MachineParts;
 
-public interface IStateMap<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface IStateMap<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     bool Register(Transition<TState, TStimulus> transition);
     bool CheckTransition(TState currentState, TStimulus reason, out TState nextState);
 }
 
-public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface IStateMapValidation<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    bool HasTopLevelState(TState state);
+    IReadOnlyList<TState> TopLevelStates { get; }
+    IReadOnlyDictionary<TStimulus, TState> StateTransitions(TState state);
+    bool IsTransitionRegistered(Transition<TState, TStimulus> transition);
+}
+
+public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     private readonly Dictionary<TState, Dictionary<TStimulus, TState>> _stateTransitions = new();
 
@@ -33,5 +48,26 @@ public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus> where TS
 
         nextState = state;
         return true;
+    }
+
+    public bool HasTopLevelState(TState state)
+    {
+        return _stateTransitions.ContainsKey(state);
+    }
+
+    public IReadOnlyList<TState> TopLevelStates => _stateTransitions.Keys.ToList();
+
+    public IReadOnlyDictionary<TStimulus, TState> StateTransitions(TState state) => _stateTransitions[state];
+    public bool IsTransitionRegistered(Transition<TState, TStimulus> transition)
+    {
+        if (_stateTransitions.TryGetValue(transition.From, out var value))
+        {
+            if (value.TryGetValue(transition.Reason, out var state))
+            {
+                return transition.To.Equals(state);
+            }
+        }
+
+        return false;
     }
 }

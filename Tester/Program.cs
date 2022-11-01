@@ -8,7 +8,7 @@ void PlayQuickStopAction(Transition<State, Stimulus> transition)
     Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
 }
 
-var state_machine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
+var state_machine_builder = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithUnboundedHistory()
     .WithEnterAction<DebugTransition>()
     .WithEnterAction(new AnimationAction())
@@ -22,7 +22,8 @@ var state_machine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     {
         sb.CanTransitionTo(State.Running, Stimulus.Run)
             .CanTransitionTo(State.Idle, Stimulus.Stop)
-            .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch);
+            .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch)
+            .WithLeaveAction(State.Idle, Stimulus.Stop, t => { Console.WriteLine("test"); });
     })
     .WithState(State.Running, sb =>
     {
@@ -42,8 +43,15 @@ var state_machine = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
     {
         sb.CanTransitionTo(State.Walking, Stimulus.Walk)
             .CanTransitionTo(State.Crouched, Stimulus.Stop);
-    })
-    .Build();
+    });
+
+var validate = state_machine_builder.Validate();
+if (validate.Errors.Any())
+{
+    throw new Exception("Errors when validating state machine");
+}
+
+var state_machine = state_machine_builder.Build();
 
 ConsoleKey key;
 do

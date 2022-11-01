@@ -74,8 +74,7 @@ public sealed class SynchronousStateMachine<TState, TStimulus> : ISynchronousSta
         {
             if (ThrowExceptionOnFailedTransition)
             {
-                throw new Exception(
-                    $"No state transition available.  Current State: {CurrentState}, Stimulus: {stimulus}");
+                throw new Exception($"No state transition available.  Current State: {CurrentState}, Stimulus: {stimulus}");
             }
             return false;
         }

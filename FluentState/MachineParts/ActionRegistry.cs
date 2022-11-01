@@ -1,9 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FluentState.MachineParts;
 
-public interface IAction<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface IActionRegistryValidation<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    IReadOnlyList<Transition<TState, TStimulus>> TransitionActionTransitions { get; }
+}
+
+public interface IAction<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     void OnTransition(Transition<TState, TStimulus> transition);
 }
@@ -31,15 +41,16 @@ public interface IActionRegistry<TState, TStimulus> where TState : struct where 
     void Register(TState from, TState to, TStimulus when, IAction<TState, TStimulus> action);
     void Register(Transition<TState, TStimulus> transition, IAction<TState, TStimulus> action);
 
-    void Trigger(TState stateKey, Transition<TState, TStimulus> transition);
+    void Trigger(TState state, Transition<TState, TStimulus> transition);
 }
 
-public class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimulus> where TState : struct
+public class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimulus>, IActionRegistryValidation<TState, TStimulus>
+    where TState : struct
     where TStimulus : struct
 {
     private readonly List<IAction<TState, TStimulus>> _globalActions = new();
-    private readonly Dictionary<TState, List<IAction<TState, TStimulus>>> _stateWideActions = new();
-    private readonly Dictionary<Transition<TState, TStimulus>, List<IAction<TState, TStimulus>>> _statePairAndStimulusActions = new(new TransitionComparer<TState, TStimulus>());
+    private readonly Dictionary<TState, List<IAction<TState, TStimulus>>> _stateActions = new();
+    private readonly Dictionary<Transition<TState, TStimulus>, List<IAction<TState, TStimulus>>> _transitionActions = new(new TransitionComparer<TState, TStimulus>());
 
     public void Register(IAction<TState, TStimulus> action)
     {
@@ -48,12 +59,12 @@ public class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimul
 
     public void Register(TState state, IAction<TState, TStimulus> action)
     {
-        if (!_stateWideActions.ContainsKey(state))
+        if (!_stateActions.ContainsKey(state))
         {
-            _stateWideActions[state] = new List<IAction<TState, TStimulus>>();
+            _stateActions[state] = new List<IAction<TState, TStimulus>>();
         }
 
-        _stateWideActions[state].Add(action);
+        _stateActions[state].Add(action);
     }
 
     public void Register(TState from, TState to, TStimulus when, IAction<TState, TStimulus> action)
@@ -63,18 +74,18 @@ public class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimul
 
     public void Register(Transition<TState, TStimulus> transition, IAction<TState, TStimulus> action)
     {
-        if (!_statePairAndStimulusActions.ContainsKey(transition))
+        if (!_transitionActions.ContainsKey(transition))
         {
-            _statePairAndStimulusActions[transition] = new List<IAction<TState, TStimulus>>();
+            _transitionActions[transition] = new List<IAction<TState, TStimulus>>();
         }
-        _statePairAndStimulusActions[transition].Add(action);
+        _transitionActions[transition].Add(action);
     }
 
-    public void Trigger(TState stateKey, Transition<TState, TStimulus> transition)
+    public void Trigger(TState state, Transition<TState, TStimulus> transition)
     {
         DoTriggerActions(_globalActions, transition);
-        DoTriggerActions(_stateWideActions, stateKey, transition);
-        DoTriggerActions(_statePairAndStimulusActions, transition, transition);
+        DoTriggerActions(_stateActions, state, transition);
+        DoTriggerActions(_transitionActions, transition, transition);
     }
 
     private static void DoTriggerActions<TKey>(IReadOnlyDictionary<TKey, List<IAction<TState, TStimulus>>> actionMap, TKey key, Transition<TState, TStimulus> transition)
@@ -93,4 +104,6 @@ public class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimul
             action.OnTransition(transition);
         }
     }
+
+    public IReadOnlyList<Transition<TState, TStimulus>> TransitionActionTransitions => _transitionActions.Keys.ToList();
 }
