@@ -51,6 +51,14 @@ if (validate.Errors.Any())
     throw new Exception("Errors when validating state machine");
 }
 
+if (validate.Warnings.Any())
+{
+    foreach (var warning in validate.Warnings)
+    {
+        Console.WriteLine(warning.Reason);
+    }
+}
+
 var state_machine = state_machine_builder.Build();
 
 ConsoleKey key;

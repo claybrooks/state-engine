@@ -1,6 +1,7 @@
 ﻿using FluentState.History;
 using FluentState.MachineParts;
 using System;
+using System.Collections.Generic;
 using FluentState.Validation;
 
 namespace FluentState.Builder;
@@ -84,13 +85,13 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// </summary>
     /// <param name="options"></param>
     /// <returns></returns>
-    IValidationResult Validate(ValidationOptions options);
+    IValidationResult Validate();
     
     /// <summary>
     /// Builds the <see cref="IStateMachine{TState,TStimulus}"/>
     /// </summary>
     /// <returns></returns>
-    IValidationResult Validate();
+    IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules);
 }
 
 public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
@@ -175,13 +176,13 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
 
     public IValidationResult Validate()
     {
-        return Validate(new ValidationOptions());
+        return Validate(DefaultRules.Get<TState, TStimulus>());
     }
 
-    public IValidationResult Validate(ValidationOptions options)
+    public IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules)
     {
         var validator = new Validator<TState, TStimulus>();
-        return validator.Validate(options, _initialState, _stateMap, _enterActions, _leaveActions, _stateGuard);
+        return validator.Validate(rules, _initialState, _stateMap, _enterActions, _leaveActions, _stateGuard);
     }
 
     public TStateMachine  Build()
