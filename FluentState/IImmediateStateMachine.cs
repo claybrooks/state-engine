@@ -1,6 +1,6 @@
 ﻿namespace FluentState;
 
-public interface ISynchronousStateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
+public interface IImmediateStateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

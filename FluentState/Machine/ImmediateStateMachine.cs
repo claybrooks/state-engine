@@ -6,28 +6,28 @@ using FluentState.MachineParts;
 
 namespace FluentState.Machine;
 
-public sealed class StateMachineBuilder<TState, TStimulus> : Builder<SynchronousStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class ImmediateStateMachineBuilder<TState, TStimulus> : Builder<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public StateMachineBuilder(TState initialState) : base(initialState, new StateMachineFactory<TState, TStimulus>())
+    public ImmediateStateMachineBuilder(TState initialState) : base(initialState, new ImmediateStateMachineFactory<TState, TStimulus>())
     {
     }
 }
 
-public sealed class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<SynchronousStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class ImmediateStateMachineFactory<TState, TStimulus> : IStateMachineFactory<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public SynchronousStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
+    public ImmediateStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new SynchronousStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
+        return new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
             stateGuard, history);
     }
 }
 
-public sealed class SynchronousStateMachine<TState, TStimulus> : ISynchronousStateMachine<TState, TStimulus>
+public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -44,7 +44,7 @@ public sealed class SynchronousStateMachine<TState, TStimulus> : ISynchronousSta
     // History
     private readonly IStateMachineHistory<TState, TStimulus> _history;
 
-    public SynchronousStateMachine(TState initialState,
+    public ImmediateStateMachine(TState initialState,
         IActionRegistry<TState, TStimulus> enterActions,
         IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,

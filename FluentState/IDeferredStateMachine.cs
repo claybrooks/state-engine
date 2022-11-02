@@ -4,18 +4,13 @@ using System.Threading.Tasks;
 
 namespace FluentState;
 
-public interface IAsyncStateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>, IAsyncDisposable
+public interface IDeferredStateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>, IAsyncDisposable
     where TState : struct
     where TStimulus : struct
 {
     /// <summary>
     /// Queue's the provided <typeparamref name="TStimulus"/> to the state machine, but defers execution.
     /// </summary>
-    /// <remarks>
-    /// Callers that care about completion of processing the <typeparamref name="TStimulus"/> should consider
-    /// <see cref="PostAndWaitAsync(TStimulus, CancellationToken)"/>, or consider immediately calling <see cref="AwaitIdleAsync(CancellationToken)"/>,
-    /// or calling the synchronous <see cref="IStateMachine{TState,TStimulus}.Post"/> directly
-    /// </remarks>
     /// <param name="stimulus"></param>
     /// <param name="token"></param>
     /// <returns></returns>

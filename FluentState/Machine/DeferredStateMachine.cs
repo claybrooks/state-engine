@@ -9,39 +9,39 @@ using FluentState.MachineParts;
 
 namespace FluentState.Machine;
 
-public sealed class AsyncStateMachineBuilder<TState, TStimulus> : Builder<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class DeferredStateMachineBuilder<TState, TStimulus> : Builder<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public AsyncStateMachineBuilder(TState initialState) : base(initialState, new AsyncStateMachineFactory<TState, TStimulus>())
+    public DeferredStateMachineBuilder(TState initialState) : base(initialState, new DeferredStateMachineFactory<TState, TStimulus>())
     {
     }
 }
 
-public sealed class AsyncStateMachineFactory<TState, TStimulus> : IStateMachineFactory<AsyncStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class DeferredStateMachineFactory<TState, TStimulus> : IStateMachineFactory<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public AsyncStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
+    public DeferredStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new AsyncStateMachine<TState, TStimulus>(new SynchronousStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, stateGuard, history));
+        return new DeferredStateMachine<TState, TStimulus>(new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, stateGuard, history));
     }
 }
 
-public sealed class AsyncStateMachine<TState, TStimulus> : IAsyncStateMachine<TState, TStimulus>
+public sealed class DeferredStateMachine<TState, TStimulus> : IDeferredStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     // Synchronous machine that handles most of the work
-    private readonly ISynchronousStateMachine<TState, TStimulus> _stateMachine;
+    private readonly IImmediateStateMachine<TState, TStimulus> _stateMachine;
 
     // Queue for holding stimuli
     private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Task _queueProcessingTask;
 
-    public AsyncStateMachine(ISynchronousStateMachine<TState, TStimulus> stateMachine)
+    public DeferredStateMachine(IImmediateStateMachine<TState, TStimulus> stateMachine)
     {
         _stateMachine = stateMachine;
         _queueProcessingTask = Task.Factory.StartNew(async () =>

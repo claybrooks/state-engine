@@ -8,7 +8,7 @@ void PlayQuickStopAction(Transition<State, Stimulus> transition)
     Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
 }
 
-var state_machine_builder = new AsyncStateMachineBuilder<State, Stimulus>(State.Idle)
+var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithUnboundedHistory()
     .WithEnterAction<DebugTransition>()
     .WithEnterAction(new AnimationAction())
@@ -48,6 +48,11 @@ var state_machine_builder = new AsyncStateMachineBuilder<State, Stimulus>(State.
 var validate = state_machine_builder.Validate();
 if (validate.Errors.Any())
 {
+    foreach (var error in validate.Errors)
+    {
+        Console.WriteLine(error.Reason);
+    }
+
     throw new Exception("Errors when validating state machine");
 }
 
@@ -59,6 +64,8 @@ if (validate.Warnings.Any())
     }
 }
 
+var visualizer = state_machine_builder.Visualizer;
+await visualizer.CreateDot("PlayerAnimation", "PlayerAnimation.dot");
 var state_machine = state_machine_builder.Build();
 
 ConsoleKey key;

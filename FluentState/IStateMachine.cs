@@ -10,7 +10,7 @@ public interface IStateMachine<TState, TStimulus>
 {
     /// <summary>
     /// This does not consider failed transitions due to guard calls.  Only when there is no destination state based on
-    /// <see cref="SynchronousStateMachine{TState,TStimulus}.CurrentState"/> and the provided <typeparamref name="TStimulus"/>
+    /// <see cref="ImmediateStateMachine{TState,TStimulus}.CurrentState"/> and the provided <typeparamref name="TStimulus"/>
     /// </summary>
     bool ThrowExceptionOnFailedTransition { get; set; }
 

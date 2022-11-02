@@ -3,6 +3,7 @@ using FluentState.MachineParts;
 using System;
 using System.Collections.Generic;
 using FluentState.Validation;
+using FluentState.Visualizer;
 
 namespace FluentState.Builder;
 
@@ -92,6 +93,13 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// </summary>
     /// <returns></returns>
     IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="stateMachineName"></param>
+    /// <returns></returns>
+    IVisualizer Visualizer { get; }
 }
 
 public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
@@ -101,7 +109,7 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
 {
     private readonly TState _initialState;
     private readonly IStateMachineFactory<TStateMachine, TState, TStimulus> _factory;
-    
+
     private readonly StateMap<TState, TStimulus> _stateMap = new();
     private readonly ActionRegistry<TState, TStimulus> _enterActions = new();
     private readonly ActionRegistry<TState, TStimulus> _leaveActions = new();
@@ -114,9 +122,11 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
         _factory = factory;
     }
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithState(TState state, Action<StateBuilder<TState, TStimulus>> configureState)
+    public IBuilder<TStateMachine, TState, TStimulus> WithState(TState state,
+        Action<StateBuilder<TState, TStimulus>> configureState)
     {
-        var state_builder = new StateBuilder<TState, TStimulus>(state, _stateGuard, _stateMap, _enterActions, _leaveActions);
+        var state_builder =
+            new StateBuilder<TState, TStimulus>(state, _stateGuard, _stateMap, _enterActions, _leaveActions);
         configureState(state_builder);
         return this;
     }
@@ -128,10 +138,12 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
         return WithEnterAction(new DelegateAction<TState, TStimulus>(action));
     }
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>() where TAction : IAction<TState, TStimulus>, new()
+    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>()
+        where TAction : IAction<TState, TStimulus>, new()
     {
         return WithEnterAction(new TAction());
     }
+
     public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(IAction<TState, TStimulus> action)
     {
         _enterActions.Register(action);
@@ -147,7 +159,8 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
         return WithLeaveAction(new DelegateAction<TState, TStimulus>(action));
     }
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>() where TAction : IAction<TState, TStimulus>, new()
+    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>()
+        where TAction : IAction<TState, TStimulus>, new()
     {
         return WithLeaveAction(new TAction());
     }
@@ -184,6 +197,8 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
         var validator = new Validator<TState, TStimulus>();
         return validator.Validate(rules, _initialState, _stateMap, _enterActions, _leaveActions, _stateGuard);
     }
+
+    public IVisualizer Visualizer => new Visualizer<TState, TStimulus>(_initialState, _stateMap, _stateGuard);
 
     public TStateMachine  Build()
     {
