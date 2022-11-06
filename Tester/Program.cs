@@ -1,4 +1,7 @@
-﻿using FluentState;
+﻿using StateEngine;
+using StateEngine.Deferred;
+using StateEngine.Validation;
+using StateEngine.Visualizer;
 using Tester;
 
 void PlayQuickStopAction(ITransition<State, Stimulus> transition)
@@ -47,17 +50,18 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
             .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
     });
 
-var validate = state_machine_builder.Validate();
-if (validate.Errors.Any())
+var validator = state_machine_builder.Validator<ValidatorFactory<State, Stimulus>>(DefaultRules.Get<State, Stimulus>());
+var results = validator.Validate();
+if (results.Errors.Any())
 {
-    foreach (var error in validate.Errors)
+    foreach (var error in results.Errors)
     {
         Console.WriteLine(error.Reason);
     }
 }
 
-var visualizer = state_machine_builder.Visualizer;
-await visualizer.CreateDot("PlayerAnimation", "PlayerAnimation.dot");
+var visualizer = state_machine_builder.Visualizer<VisualizerFactory<State, Stimulus>>();
+visualizer.CreateDot("PlayerAnimation", "PlayerAnimation.dot");
 var state_machine = state_machine_builder.Build();
 
 ConsoleKey key;
@@ -104,7 +108,9 @@ await state_machine.Post(Stimulus.Walk);
 await state_machine.Post(Stimulus.Stop);
 await state_machine.Post(Stimulus.Stop);
 
-await state_machine.DisposeAsync();
+state_machine.Dispose();
+
+Console.WriteLine("Exiting");
 
 public class AnimationTransitionAction : ITransitionAction<State, Stimulus>
 {
@@ -130,7 +136,7 @@ public class DebugTransition: ITransitionAction<State, Stimulus>
 
 public class QuickStopTransitionGuard : ITransitionGuard<State, Stimulus>
 {
-    private DateTime _dateOfLastQuickStop = DateTime.UnixEpoch;
+    private DateTime _dateOfLastQuickStop = DateTime.MinValue;
 
     public Task<bool> Check(ITransition<State, Stimulus> transition)
     { 
