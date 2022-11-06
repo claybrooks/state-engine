@@ -6,7 +6,7 @@ public interface IValidator<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    IValidationResult Validate(
+    IValidationResult<TState, TStimulus> Validate(
         IEnumerable<IValidationRule<TState, TStimulus>> rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMapValidation,
@@ -19,7 +19,7 @@ internal sealed class Validator<TState, TStimulus> : IValidator<TState, TStimulu
     where TState : struct
     where TStimulus : struct
 {
-    public IValidationResult Validate(
+    public IValidationResult<TState, TStimulus> Validate(
         IEnumerable<IValidationRule<TState, TStimulus>> rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMapValidation,
@@ -27,8 +27,7 @@ internal sealed class Validator<TState, TStimulus> : IValidator<TState, TStimulu
         IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
         IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
-        var errors = new List<IValidationError>();
-        var warnings = new List<IValidationWarning>();
+        var errors = new List<IValidationError<TState, TStimulus>>();
 
         foreach (var rule in rules)
         {
@@ -40,13 +39,11 @@ internal sealed class Validator<TState, TStimulus> : IValidator<TState, TStimulu
                 guardRegistryValidation);
 
             errors.AddRange(result.Errors);
-            warnings.AddRange(result.Warnings);
         }
 
-        return new ValidationResult
+        return new ValidationResult<TState, TStimulus>
         {
-            Errors = errors,
-            Warnings = warnings
+            Errors = errors
         };
     }
 }

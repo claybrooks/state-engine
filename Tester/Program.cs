@@ -21,7 +21,7 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
         sb.CanTransitionTo(State.Running, Stimulus.Run)
             .CanTransitionTo(State.Idle, Stimulus.Stop)
             .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch)
-            .WithLeaveAction(State.Idle, Stimulus.Stop, t => { Console.WriteLine("test"); });
+            .WithEnterAction(State.Idle, Stimulus.Stop, t => { Console.WriteLine("test"); });
     })
     .WithState(State.Running, sb =>
     {
@@ -41,6 +41,10 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
     {
         sb.CanTransitionTo(State.Walking, Stimulus.Walk)
             .CanTransitionTo(State.Crouched, Stimulus.Stop);
+    })
+    .WithState(State.Test, sb =>
+    {
+        sb.CanTransitionTo(State.Idle, Stimulus.QuickStop);
     });
 
 var validate = state_machine_builder.Validate();
@@ -49,16 +53,6 @@ if (validate.Errors.Any())
     foreach (var error in validate.Errors)
     {
         Console.WriteLine(error.Reason);
-    }
-
-    throw new Exception("Errors when validating state machine");
-}
-
-if (validate.Warnings.Any())
-{
-    foreach (var warning in validate.Warnings)
-    {
-        Console.WriteLine(warning.Reason);
     }
 }
 

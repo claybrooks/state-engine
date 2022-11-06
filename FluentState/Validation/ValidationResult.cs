@@ -3,34 +3,34 @@ using System.Collections.Generic;
 
 namespace FluentState;
 
-public interface IValidationError
+public interface IValidationError<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     string Reason { get; }
+    IEnumerable<TState> ErrorStates { get; }
+    IEnumerable<ITransition<TState, TStimulus>> ErrorTransitions { get;}
 }
 
-public interface IValidationWarning
+public interface IValidationResult<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
-    string Reason { get; }
+    public IReadOnlyList<IValidationError<TState, TStimulus>> Errors { get; }
 }
 
-public interface IValidationResult
+public sealed class ValidationError<TState, TStimulus> : IValidationError<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
-    public IReadOnlyList<IValidationError> Errors { get; }
-    public IReadOnlyList<IValidationWarning> Warnings { get; }
+    public string Reason { get; init; } = string.Empty;
+    public IEnumerable<TState> ErrorStates { get; init; } = Array.Empty<TState>();
+    public IEnumerable<ITransition<TState, TStimulus>> ErrorTransitions { get; init; } = Array.Empty<ITransition<TState, TStimulus>>();
 }
 
-public sealed class ValidationError : IValidationError
+public sealed class ValidationResult<TState, TStimulus> : IValidationResult<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
-    public string Reason { get; set; } = string.Empty;
-}
-
-public sealed class ValidationWarning : IValidationWarning
-{
-    public string Reason { get; set; } = string.Empty;
-}
-
-public sealed class ValidationResult : IValidationResult
-{
-    public IReadOnlyList<IValidationError> Errors { get; set; } = Array.Empty<IValidationError>();
-    public IReadOnlyList<IValidationWarning> Warnings { get; set; } = Array.Empty<IValidationWarning>();
+    public IReadOnlyList<IValidationError<TState, TStimulus>> Errors { get; set; } = Array.Empty<IValidationError<TState, TStimulus>>();
 }

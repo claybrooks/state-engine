@@ -308,7 +308,7 @@ internal sealed class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TS
 
     public IStateBuilder<TState, TStimulus> WithEnterAction(TState from, TStimulus reason, ITransitionAction<TState, TStimulus> transitionAction)
     {
-        _enterActionRegistry.Register(new Transition<TState, TStimulus>{From = from, To = _state, Reason = reason}, transitionAction);
+        _enterActionRegistry.Register(from, _state, reason, transitionAction);
         return this;
     }
 

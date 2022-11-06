@@ -82,13 +82,13 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// </summary>
     /// <param name="options"></param>
     /// <returns></returns>
-    IValidationResult Validate();
+    IValidationResult<TState, TStimulus> Validate();
     
     /// <summary>
     /// Builds the <see cref="IStateMachine{TState,TStimulus}"/>
     /// </summary>
     /// <returns></returns>
-    IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules);
+    IValidationResult<TState, TStimulus> Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules);
 
     /// <summary>
     /// 
@@ -112,7 +112,7 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
     private readonly GuardRegistry<TState, TStimulus> _guardRegistry = new();
     private readonly StateMachineHistory<TState, TStimulus> _history = new();
 
-    private IValidationResult? _validationResult = null;
+    private IValidationResult<TState, TStimulus>? _validationResult = null;
 
     protected AbstractBuilder(TState initialState, IStateMachineFactory<TStateMachine, TState, TStimulus> factory)
     {
@@ -185,19 +185,25 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
         return this;
     }
 
-    public IValidationResult Validate()
+    public IValidationResult<TState, TStimulus> Validate()
     {
         return Validate(DefaultRules.Get<TState, TStimulus>());
     }
 
-    public IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules)
+    public IValidationResult<TState, TStimulus> Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules)
     {
         var validator = new Validator<TState, TStimulus>();
         _validationResult = validator.Validate(rules, _initialState, _stateMap, _enterActionRegistry, _leaveActionRegistry, _guardRegistry);
         return _validationResult;
     }
 
-    public IVisualizer Visualizer => new Visualizer<TState, TStimulus>(_initialState, _stateMap, _guardRegistry, _validationResult);
+    public IVisualizer Visualizer =>
+        new Visualizer<TState, TStimulus>(_initialState,
+            _stateMap,
+            _enterActionRegistry,
+            _leaveActionRegistry,
+            _guardRegistry,
+            _validationResult);
 
     public TStateMachine  Build()
     {

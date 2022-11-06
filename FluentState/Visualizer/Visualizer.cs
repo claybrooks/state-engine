@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetGraph;
+using DotNetGraph.Attributes;
+using DotNetGraph.Core;
+using DotNetGraph.Edge;
 using DotNetGraph.Extensions;
 using DotNetGraph.Node;
 
@@ -23,16 +27,22 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
     private readonly TState _initialState;
     private readonly IStateMapValidation<TState, TStimulus> _stateMap;
     private readonly IGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
-    private readonly IValidationResult? _validationResult;
+    private readonly IValidationResult<TState, TStimulus>? _validationResult;
+    private readonly IActionRegistryValidation<TState, TStimulus> _enterActionRegistryValidation;
+    private readonly IActionRegistryValidation<TState, TStimulus> _leaveActionRegistryValidation;
 
     public Visualizer(
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMap,
+        IActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
+        IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
         IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
-        IValidationResult? validationResult)
+        IValidationResult<TState, TStimulus>? validationResult)
     {
-        this._stateMap = stateMap;
-        this._guardRegistryValidation = guardRegistryValidation;
+        _stateMap = stateMap;
+        _enterActionRegistryValidation = enterActionRegistryValidation;
+        _leaveActionRegistryValidation = leaveActionRegistryValidation;
+        _guardRegistryValidation = guardRegistryValidation;
         _validationResult = validationResult;
         _initialState = initialState;
     }
@@ -45,82 +55,192 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
     public string CreateDot(string stateMachineName)
     {
+        var graph = DoBuildGraph(stateMachineName);
+        DoHighlightErrors(graph);
+
+        return graph.Compile(indented: true);
+    }
+
+    #region Graph Building
+
+    private DotGraph DoBuildGraph(string stateMachineName)
+    {
         var graph = new DotGraph(stateMachineName)
         {
             Directed = true,
             Strict = true
         };
-
-        var nodes = _stateMap.TopLevelStates;
+        
         var guarded_transitions = _guardRegistryValidation.GuardTransitions;
+        var entry_actions = _enterActionRegistryValidation.TransitionActionTransitions;
+        var leave_actions = _leaveActionRegistryValidation.TransitionActionTransitions;
 
-        foreach (var node in nodes)
+        foreach (var node in _stateMap.TopLevelStates)
         {
-            var graph_node = $"{node}";
-            if (node.Equals(_initialState))
+            var state_node_id = $"{node}";
+
+            var is_starting_node = node.Equals(_initialState);
+            var state_node = graph.AddOrGetNode(state_node_id, ns =>
             {
-                graph.AddNodeIfNotExist(graph_node, ns =>
-                {
-                    ns.Shape = DotNodeShape.Rectangle;
-                });
-            }
+                ns.Shape = is_starting_node ? DotNodeShape.Pentagon : DotNodeShape.Square;
+                ns.Color = is_starting_node ? Color.Green : Color.Black;
+            });
 
-            foreach (var transition in _stateMap.StateTransitions(node))
+            foreach (var state_transition in _stateMap.StateTransitions(node))
             {
-                var to_node = $"{transition.Value}";
+                var to_node_id = $"{state_transition.Value}";
 
-                var transition_type = new Transition<TState, TStimulus>{From = node, To = transition.Value, Reason = transition.Key};
+                var transition = new Transition<TState, TStimulus>{From = node, To = state_transition.Value, Reason = state_transition.Key};
 
-                if (guarded_transitions.Any(gt => gt.From.Equals(transition_type.From) && gt.To.Equals(transition_type.To) && gt.Reason.Equals(transition_type.Reason)))
+                if (guarded_transitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
                 {
-                    var guard_node = $"{transition.Key}";
-                    graph.AddNodeIfNotExist(guard_node, ns =>
-                    {
-                        ns.Shape = DotNodeShape.Diamond;
-                        ns.Label = $"Allow {guard_node}?";
-                    });
-
-                    graph.AddEdge(graph_node, guard_node, edge =>
-                    {
-                        edge.Label = $"{guard_node}";
-                    });
-
-                    graph.AddNodeIfNotExist($"{to_node}");
-
-                    graph.AddEdge(guard_node, to_node, edge =>
-                    {
-                        edge.Label = "Yes";
-                    });
-
-                    graph.AddEdge(guard_node, graph_node, edge =>
-                    {
-                        edge.Label = "No";
-                    });
+                    DoAddGuardedTransition(graph, transition);
                 }
                 else
                 {
-                    graph.AddNodeIfNotExist(to_node);
-                    graph.AddEdge(graph_node, to_node, edge =>
-                    {
-                        edge.Label = $"{transition.Key}";
-                    });
+                    DoAddTransition(graph, transition);
                 }
             }
         }
-        
-        return graph.Compile(indented: true);
+
+        return graph;
     }
+
+    private void DoAddGuardedTransition(DotGraph graph, ITransition<TState, TStimulus> transition)
+    {
+        var guard_node_id = $"{transition.Reason}";
+        var guard_node = graph.AddOrGetNode(guard_node_id, ns =>
+        {
+            ns.Shape = DotNodeShape.Diamond;
+            ns.Color = Color.DarkOrange;
+            ns.Label = $"{guard_node_id}?";
+        });
+
+        var from_node = graph.AddOrGetNode($"{transition.From}");
+        var to_node = graph.AddOrGetNode($"{transition.To}");
+
+        graph.AddEdge(from_node, guard_node, edge =>
+        {
+            edge.Label = $"{guard_node_id}";
+        });
+
+        graph.AddEdge(guard_node, to_node, edge =>
+        {
+            edge.Label = "Yes";
+        });
+
+        graph.AddEdge(guard_node, from_node, edge =>
+        {
+            edge.Label = "No";
+        });
+    }
+
+    private void DoAddTransition(DotGraph graph, ITransition<TState, TStimulus> transition)
+    {
+        var from_node = graph.AddOrGetNode($"{transition.From}");
+        var to_node = graph.AddOrGetNode($"{transition.To}");
+
+        graph.AddEdge(from_node, to_node, edge =>
+        {
+            edge.Label = $"{transition.Reason}";
+        });
+    }
+
+    private void DoHighlightErrors(DotGraph graph)
+    {
+        var errors = _validationResult?.Errors ?? Array.Empty<IValidationError<TState, TStimulus>>();
+        foreach (var validation_error in errors)
+        {
+            foreach (var state in validation_error.ErrorStates)
+            {
+                var node = graph.GetNode($"{state}");
+                if (node == null)
+                {
+                    throw new Exception(
+                        "Could not find error node during visualization, please report this to the dev");
+                }
+                else
+                {
+                    node.FillColor = Color.Red;
+                    node.Style = DotNodeStyle.Filled;
+                }
+            }
+
+            foreach (var transition in validation_error.ErrorTransitions)
+            {
+                var from = graph.GetNode($"{transition.From}");
+                if (from == null)
+                {
+                    throw new Exception(
+                        "Could not find error node during visualization, please report this to the dev");
+                }
+                else
+                {
+                    from.FillColor = Color.Red;
+                    from.Style = DotNodeStyle.Filled;
+                }
+
+                var to = graph.GetNode($"{transition.To}");
+                if (to == null)
+                {
+                    throw new Exception(
+                        "Could not find error node during visualization, please report this to the dev");
+                }
+                else
+                {
+                    to.FillColor = Color.Red;
+                    to.Style = DotNodeStyle.Filled;
+                }
+
+                foreach (var edge in graph.Elements.OfType<DotEdge>())
+                {
+                    var left_node = edge.Left;
+                    var right_node = edge.Right;
+
+                    if (left_node == null || right_node == null)
+                    {
+                        continue;
+                    }
+
+                    if (left_node == from && right_node == to)
+                    {
+                        edge.Color = Color.Red;
+                    }
+                }
+            }
+        }
+    }
+
+    #endregion
 }
 
 public static class Extension
 {
-    public static DotGraph AddNodeIfNotExist(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
+    public static DotNode? GetNode(this DotGraph graph, string id)
     {
-        if (graph.Elements.OfType<DotNode>().All(dn => dn.Identifier != id))
+        return graph.Elements.OfType<DotNode>().FirstOrDefault(e => e.Identifier == id);
+    }
+
+    public static DotNode AddOrGetNode(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
+    {
+        var node = graph.GetNode(id);
+        if (node != null)
         {
-            graph.AddNode(id, nodeSetup);
+            nodeSetup?.Invoke(node);
+            return node;
         }
 
-        return graph;
+        DotNode? n = null;
+        graph.AddNode(id, node =>
+        {
+            n = node;
+            nodeSetup?.Invoke(n);
+        });
+
+        if (n == null)
+        {
+            throw new Exception("If this happens, it's a bug within the dot generation library, sorry");
+        }
+        return n;
     }
 }

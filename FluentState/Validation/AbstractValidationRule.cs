@@ -7,12 +7,11 @@ public abstract class AbstractValidationRule<TState, TStimulus> : IValidationRul
     where TState : struct
     where TStimulus : struct
 {
-    protected List<IValidationError> Errors = new();
-    protected List<IValidationWarning> Warnings = new();
+    protected List<IValidationError<TState, TStimulus>> Errors = new();
 
-    public abstract IValidationResult Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
+    public abstract IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
         IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
         IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 
-    public IValidationResult Result => new ValidationResult {Errors = Errors, Warnings = Warnings};
+    public IValidationResult<TState, TStimulus> Result => new ValidationResult<TState, TStimulus> {Errors = Errors};
 }
