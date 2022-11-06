@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using FluentState.Builder;
-using FluentState.History;
-using FluentState.MachineParts;
 
-namespace FluentState.Machine;
+namespace FluentState;
 
-public sealed class DeferredStateMachineBuilder<TState, TStimulus> : Builder<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class DeferredStateMachineBuilder<TState, TStimulus> : AbstractBuilder<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -18,14 +15,14 @@ public sealed class DeferredStateMachineBuilder<TState, TStimulus> : Builder<Def
     }
 }
 
-public sealed class DeferredStateMachineFactory<TState, TStimulus> : IStateMachineFactory<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
+internal sealed class DeferredStateMachineFactory<TState, TStimulus> : IStateMachineFactory<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     public DeferredStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
-        IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
+        IStateMap<TState, TStimulus> stateTransitions, IGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new DeferredStateMachine<TState, TStimulus>(new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, stateGuard, history));
+        return new DeferredStateMachine<TState, TStimulus>(new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, guardRegistry, history));
     }
 }
 
@@ -55,13 +52,13 @@ public sealed class DeferredStateMachine<TState, TStimulus> : IDeferredStateMach
     public bool ThrowExceptionOnFailedTransition { get => _stateMachine.ThrowExceptionOnFailedTransition; set => _stateMachine.ThrowExceptionOnFailedTransition = value; }
     public bool ThrowExceptionOnSameStateTransition { get => _stateMachine.ThrowExceptionOnSameStateTransition; set=> _stateMachine.ThrowExceptionOnSameStateTransition = value; }
     public TState CurrentState => _stateMachine.CurrentState;
-    public IEnumerable<HistoryItem<TState, TStimulus>> History => _stateMachine.History;
+    public IEnumerable<IHistoryItem<TState, TStimulus>> History => _stateMachine.History;
 
     #endregion
 
     #region Async API
     
-    public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
+    public async Task<bool> Post(TStimulus stimulus, CancellationToken token = default)
     {
         await _stimulusChannel.Writer.WriteAsync(stimulus, token);
         return true;
@@ -69,7 +66,7 @@ public sealed class DeferredStateMachine<TState, TStimulus> : IDeferredStateMach
 
     public async Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken token = default)
     {
-        var posted = await PostAsync(stimulus, token);
+        var posted = await Post(stimulus, token);
         if (!posted)
         {
             return false;
@@ -110,7 +107,7 @@ public sealed class DeferredStateMachine<TState, TStimulus> : IDeferredStateMach
             try
             {
                 var next = await _stimulusChannel.Reader.ReadAsync(token);
-                _stateMachine.Post(next);
+                await _stateMachine.Post(next);
             }
             catch (TaskCanceledException)
             {

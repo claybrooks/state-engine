@@ -1,11 +1,7 @@
-﻿using FluentState.History;
-using FluentState.MachineParts;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using FluentState.Validation;
-using FluentState.Visualizer;
 
-namespace FluentState.Builder;
+namespace FluentState;
 
 public interface IBuilder<out TStateMachine, TState, TStimulus>
     where TStateMachine : IStateMachine<TState, TStimulus>
@@ -18,49 +14,49 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// <param name="state"></param>
     /// <param name="configureState"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithState(TState state, Action<StateBuilder<TState, TStimulus>> configureState);
+    IBuilder<TStateMachine, TState, TStimulus> WithState(TState state, Action<IStateBuilder<TState, TStimulus>> configureState);
 
     /// <summary>
     /// Adds a trigger for any state enter event
     /// </summary>
     /// <param name="action"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<Transition<TState, TStimulus>> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action);
 
     /// <summary>
     /// Adds a trigger for any state enter event
     /// </summary>
     /// <typeparam name="TAction"></typeparam>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>() where TAction : IAction<TState, TStimulus>, new();
+    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
 
     /// <summary>
     /// Adds a trigger for any state enter event
     /// </summary>
-    /// <param name="action"></param>
+    /// <param name="transitionAction"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(IAction<TState, TStimulus> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction);
 
     /// <summary>
     /// Adds a trigger for any state leave event
     /// </summary>
     /// <param name="action"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<Transition<TState, TStimulus>> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action);
 
     /// <summary>
     /// Adds a trigger for any state leave event
     /// </summary>
     /// <typeparam name="TAction"></typeparam>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>() where TAction : IAction<TState, TStimulus>, new();
+    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
 
     /// <summary>
     /// Adds a trigger for any state leave event
     /// </summary>
-    /// <param name="action"></param>
+    /// <param name="transitionAction"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(IAction<TState, TStimulus> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction);
 
     /// <summary>
     /// Enables <see cref="IStateMachine{TState,TStimulus}"/> history and makes it unbounded
@@ -102,7 +98,7 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     IVisualizer Visualizer { get; }
 }
 
-public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
+public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
     where TStateMachine : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
@@ -111,42 +107,44 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
     private readonly IStateMachineFactory<TStateMachine, TState, TStimulus> _factory;
 
     private readonly StateMap<TState, TStimulus> _stateMap = new();
-    private readonly ActionRegistry<TState, TStimulus> _enterActions = new();
-    private readonly ActionRegistry<TState, TStimulus> _leaveActions = new();
-    private readonly StateStateGuard<TState, TStimulus> _stateGuard = new();
+    private readonly ActionRegistry<TState, TStimulus> _enterActionRegistry = new();
+    private readonly ActionRegistry<TState, TStimulus> _leaveActionRegistry = new();
+    private readonly GuardRegistry<TState, TStimulus> _guardRegistry = new();
     private readonly StateMachineHistory<TState, TStimulus> _history = new();
 
-    public Builder(TState initialState, IStateMachineFactory<TStateMachine, TState, TStimulus> factory)
+    private IValidationResult? _validationResult = null;
+
+    protected AbstractBuilder(TState initialState, IStateMachineFactory<TStateMachine, TState, TStimulus> factory)
     {
         _initialState = initialState;
         _factory = factory;
     }
 
     public IBuilder<TStateMachine, TState, TStimulus> WithState(TState state,
-        Action<StateBuilder<TState, TStimulus>> configureState)
+        Action<IStateBuilder<TState, TStimulus>> configureState)
     {
         var state_builder =
-            new StateBuilder<TState, TStimulus>(state, _stateGuard, _stateMap, _enterActions, _leaveActions);
+            new StateBuilder<TState, TStimulus>(state, _guardRegistry, _stateMap, _enterActionRegistry, _leaveActionRegistry);
         configureState(state_builder);
         return this;
     }
 
     #region Global Enter Actions
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<Transition<TState, TStimulus>> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action)
     {
-        return WithEnterAction(new DelegateAction<TState, TStimulus>(action));
+        return WithEnterAction(new DelegateTransitionAction<TState, TStimulus>(action));
     }
 
     public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>()
-        where TAction : IAction<TState, TStimulus>, new()
+        where TAction : ITransitionAction<TState, TStimulus>, new()
     {
         return WithEnterAction(new TAction());
     }
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(IAction<TState, TStimulus> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
-        _enterActions.Register(action);
+        _enterActionRegistry.Register(transitionAction);
         return this;
     }
 
@@ -154,20 +152,20 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
 
     #region Global Leave Actions
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<Transition<TState, TStimulus>> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action)
     {
-        return WithLeaveAction(new DelegateAction<TState, TStimulus>(action));
+        return WithLeaveAction(new DelegateTransitionAction<TState, TStimulus>(action));
     }
 
     public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>()
-        where TAction : IAction<TState, TStimulus>, new()
+        where TAction : ITransitionAction<TState, TStimulus>, new()
     {
         return WithLeaveAction(new TAction());
     }
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(IAction<TState, TStimulus> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
-        _leaveActions.Register(action);
+        _leaveActionRegistry.Register(transitionAction);
         return this;
     }
 
@@ -195,13 +193,14 @@ public class Builder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine,
     public IValidationResult Validate(IEnumerable<IValidationRule<TState, TStimulus>> rules)
     {
         var validator = new Validator<TState, TStimulus>();
-        return validator.Validate(rules, _initialState, _stateMap, _enterActions, _leaveActions, _stateGuard);
+        _validationResult = validator.Validate(rules, _initialState, _stateMap, _enterActionRegistry, _leaveActionRegistry, _guardRegistry);
+        return _validationResult;
     }
 
-    public IVisualizer Visualizer => new Visualizer<TState, TStimulus>(_initialState, _stateMap, _stateGuard);
+    public IVisualizer Visualizer => new Visualizer<TState, TStimulus>(_initialState, _stateMap, _guardRegistry, _validationResult);
 
     public TStateMachine  Build()
     {
-        return _factory.Create(_initialState, _enterActions, _leaveActions, _stateMap, _stateGuard, _history);
+        return _factory.Create(_initialState, _enterActionRegistry, _leaveActionRegistry, _stateMap, _guardRegistry, _history);
     }
 }

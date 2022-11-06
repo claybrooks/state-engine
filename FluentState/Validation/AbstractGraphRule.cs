@@ -1,29 +1,41 @@
-﻿using FluentState.MachineParts;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace FluentState.Validation;
+namespace FluentState;
 
-internal class TraverseResults<TState>
+public class TraverseResult<TState>
     where TState : struct
 {
     public IReadOnlyList<TState> NonReachableNodes { get; init; } = Array.Empty<TState>();
     public bool IsCyclic { get; init; }
 }
 
-public abstract class GraphRule<TState, TStimulus> : AbstractValidationRule<TState, TStimulus>
+public interface IGraphRule<TState, TStimulus> : IValidationRule<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    private static TraverseResults<TState>? _traverseResults = null;
+    TraverseResult<TState> TraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation);
+}
 
-    internal static TraverseResults<TState> TraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation)
+/// <summary>
+///  Static TraverseResult internally so only one traversal of the graph is done across many graph rules
+///  This means TraverseResult is now the 
+/// </summary>
+/// <typeparam name="TState"></typeparam>
+/// <typeparam name="TStimulus"></typeparam>
+public abstract class AbstractGraphRule<TState, TStimulus> : AbstractValidationRule<TState, TStimulus>, IGraphRule<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    private static TraverseResult<TState>? _traverseResults = null;
+
+    public TraverseResult<TState> TraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
         return _traverseResults ??= DoTraverseStateMachine(initialState, stateMapValidation);
     }
 
-    private static TraverseResults<TState> DoTraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation)
+    private static TraverseResult<TState> DoTraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
         var is_cyclic = false;
 
@@ -53,12 +65,10 @@ public abstract class GraphRule<TState, TStimulus> : AbstractValidationRule<TSta
             }
         }
 
-        return new TraverseResults<TState>
+        return new TraverseResult<TState>
         {
             NonReachableNodes = visited_states.Where(kvp => kvp.Value == false).Select(kvp => kvp.Key).ToList(),
             IsCyclic = is_cyclic
         };
     }
-
 }
-

@@ -1,19 +1,18 @@
-﻿using FluentState.MachineParts;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace FluentState.Validation;
+namespace FluentState;
 
 
 public abstract class AbstractValidationRule<TState, TStimulus> : IValidationRule<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    protected List<ValidationError> Errors = new();
-    protected List<ValidationWarning> Warnings = new();
+    protected List<IValidationError> Errors = new();
+    protected List<IValidationWarning> Warnings = new();
 
     public abstract IValidationResult Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
         IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IStateGuardValidation<TState, TStimulus> stateGuardValidation);
+        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 
-    protected ValidationResult Result => new() {Errors = Errors, Warnings = Warnings};
+    public IValidationResult Result => new ValidationResult {Errors = Errors, Warnings = Warnings};
 }

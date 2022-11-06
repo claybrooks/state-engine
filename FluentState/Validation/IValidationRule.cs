@@ -1,6 +1,4 @@
-﻿using FluentState.MachineParts;
-
-namespace FluentState.Validation;
+﻿namespace FluentState;
 
 public interface IValidationRule<TState, TStimulus>
     where TState : struct
@@ -10,5 +8,5 @@ public interface IValidationRule<TState, TStimulus>
         IStateMapValidation<TState, TStimulus> stateMapValidation,
         IActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
         IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IStateGuardValidation<TState, TStimulus> stateGuardValidation);
+        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }

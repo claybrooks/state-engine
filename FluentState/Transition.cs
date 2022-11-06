@@ -3,7 +3,24 @@ using System.Collections.Generic;
 
 namespace FluentState;
 
-public class Transition<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface ITransition<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    TState From { get; init; }
+    TState To { get; init; }
+    TStimulus Reason { get; init; }
+}
+
+public interface ITransitionComparer<TState, TStimulus> : IEqualityComparer<ITransition<TState, TStimulus>>
+    where TState : struct
+    where TStimulus : struct
+{
+}
+
+internal sealed class Transition<TState, TStimulus> : ITransition<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
     public TState From { get; init; }
     public TState To { get; init; }
@@ -15,9 +32,11 @@ public class Transition<TState, TStimulus> where TState : struct where TStimulus
     }
 }
 
-public class TransitionComparer<TState, TStimulus> : IEqualityComparer<Transition<TState, TStimulus>> where TState : struct where TStimulus : struct
+internal sealed class TransitionComparer<TState, TStimulus> : ITransitionComparer<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
 {
-    public bool Equals(Transition<TState, TStimulus>? x, Transition<TState, TStimulus>? y)
+    public bool Equals(ITransition<TState, TStimulus>? x, ITransition<TState, TStimulus>? y)
     {
         if (ReferenceEquals(x, y)) return true;
         if (ReferenceEquals(x, null)) return false;
@@ -26,7 +45,7 @@ public class TransitionComparer<TState, TStimulus> : IEqualityComparer<Transitio
         return x.From.Equals(y.From) && x.To.Equals(y.To) && x.Reason.Equals(y.Reason);
     }
 
-    public int GetHashCode(Transition<TState, TStimulus> obj)
+    public int GetHashCode(ITransition<TState, TStimulus> obj)
     {
         return HashCode.Combine(obj.From, obj.To, obj.Reason);
     }

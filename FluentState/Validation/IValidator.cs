@@ -1,7 +1,6 @@
-﻿using FluentState.MachineParts;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace FluentState.Validation;
+namespace FluentState;
 
 public interface IValidator<TState, TStimulus>
     where TState : struct
@@ -13,10 +12,10 @@ public interface IValidator<TState, TStimulus>
         IStateMapValidation<TState, TStimulus> stateMapValidation,
         IActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
         IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IStateGuardValidation<TState, TStimulus> stateGuardValidation);
+        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }
 
-public class Validator<TState, TStimulus> : IValidator<TState, TStimulus>
+internal sealed class Validator<TState, TStimulus> : IValidator<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -26,7 +25,7 @@ public class Validator<TState, TStimulus> : IValidator<TState, TStimulus>
         IStateMapValidation<TState, TStimulus> stateMapValidation,
         IActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
         IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IStateGuardValidation<TState, TStimulus> stateGuardValidation)
+        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var errors = new List<IValidationError>();
         var warnings = new List<IValidationWarning>();
@@ -38,7 +37,7 @@ public class Validator<TState, TStimulus> : IValidator<TState, TStimulus>
                 stateMapValidation,
                 enterRegistryValidation,
                 leaveRegistryValidation,
-                stateGuardValidation);
+                guardRegistryValidation);
 
             errors.AddRange(result.Errors);
             warnings.AddRange(result.Warnings);

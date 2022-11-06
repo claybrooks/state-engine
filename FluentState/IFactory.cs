@@ -1,7 +1,4 @@
-﻿using FluentState.History;
-using FluentState.MachineParts;
-
-namespace FluentState;
+﻿namespace FluentState;
 
 public interface IStateMachineFactory<out TStateMachine, TState, TStimulus>
     where TStateMachine : IStateMachine<TState, TStimulus>
@@ -12,6 +9,6 @@ public interface IStateMachineFactory<out TStateMachine, TState, TStimulus>
         IActionRegistry<TState, TStimulus> enterActions,
         IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
-        IStateGuard<TState, TStimulus> stateGuard,
+        IGuardRegistry<TState, TStimulus> guardRegistry,
         IStateMachineHistory<TState, TStimulus> history);
 }

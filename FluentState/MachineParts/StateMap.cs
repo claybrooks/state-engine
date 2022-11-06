@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace FluentState.MachineParts;
+namespace FluentState;
 
 public interface IStateMap<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    bool Register(Transition<TState, TStimulus> transition);
+    bool Register(ITransition<TState, TStimulus> transition);
     bool CheckTransition(TState currentState, TStimulus reason, out TState nextState);
 }
 
@@ -18,7 +18,7 @@ public interface IStateMapValidation<TState, TStimulus>
     bool HasTopLevelState(TState state);
     IReadOnlyList<TState> TopLevelStates { get; }
     IReadOnlyDictionary<TStimulus, TState> StateTransitions(TState state);
-    bool IsTransitionRegistered(Transition<TState, TStimulus> transition);
+    bool IsTransitionRegistered(ITransition<TState, TStimulus> transition);
 }
 
 public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
@@ -27,7 +27,7 @@ public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateM
 {
     private readonly Dictionary<TState, Dictionary<TStimulus, TState>> _stateTransitions = new();
 
-    public bool Register(Transition<TState, TStimulus> transition)
+    public bool Register(ITransition<TState, TStimulus> transition)
     {
         if (!_stateTransitions.ContainsKey(transition.From))
         {
@@ -58,7 +58,7 @@ public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateM
     public IReadOnlyList<TState> TopLevelStates => _stateTransitions.Keys.ToList();
 
     public IReadOnlyDictionary<TStimulus, TState> StateTransitions(TState state) => _stateTransitions[state];
-    public bool IsTransitionRegistered(Transition<TState, TStimulus> transition)
+    public bool IsTransitionRegistered(ITransition<TState, TStimulus> transition)
     {
         if (_stateTransitions.TryGetValue(transition.From, out var value))
         {

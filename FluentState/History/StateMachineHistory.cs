@@ -2,19 +2,18 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace FluentState.History;
+namespace FluentState;
 
-public class HistoryItem<TState, TStimulus>
+public interface IHistoryItem<out TState, out TStimulus>
     where TState : struct
-    where TStimulus : struct
 {
-    public TState To;
-    public TState From;
-    public TStimulus Reason;
-    public DateTimeOffset When;
+    public TState To { get; }
+    public TState From { get; }
+    public TStimulus Reason { get; }
+    public DateTimeOffset When { get; }
 }
 
-public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<HistoryItem<TState, TStimulus>>
+public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<IHistoryItem<TState, TStimulus>>
     where TState : struct
     where TStimulus : struct
 {
@@ -26,7 +25,17 @@ public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<HistoryIt
     void Clear();
 }
 
-public class StateMachineHistory<TState, TStimulus> : IStateMachineHistory<TState, TStimulus>
+internal class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    public TState To { get; init; }
+    public TState From { get; init; }
+    public TStimulus Reason { get; init; }
+    public DateTimeOffset When { get; init; }
+}
+
+internal class StateMachineHistory<TState, TStimulus> : IStateMachineHistory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -75,7 +84,7 @@ public class StateMachineHistory<TState, TStimulus> : IStateMachineHistory<TStat
         DoTrimToSize();
     }
 
-    public IEnumerator<HistoryItem<TState, TStimulus>> GetEnumerator()
+    public IEnumerator<IHistoryItem<TState, TStimulus>> GetEnumerator()
     {
         return _history.GetEnumerator();
     }

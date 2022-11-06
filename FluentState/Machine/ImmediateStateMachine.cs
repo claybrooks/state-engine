@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using FluentState.Builder;
-using FluentState.History;
-using FluentState.MachineParts;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace FluentState.Machine;
+namespace FluentState;
 
-public sealed class ImmediateStateMachineBuilder<TState, TStimulus> : Builder<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class ImmediateStateMachineBuilder<TState, TStimulus> : AbstractBuilder<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -15,15 +14,15 @@ public sealed class ImmediateStateMachineBuilder<TState, TStimulus> : Builder<Im
     }
 }
 
-public sealed class ImmediateStateMachineFactory<TState, TStimulus> : IStateMachineFactory<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
+internal sealed class ImmediateStateMachineFactory<TState, TStimulus> : IStateMachineFactory<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     public ImmediateStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
-        IStateMap<TState, TStimulus> stateTransitions, IStateGuard<TState, TStimulus> stateGuard, IStateMachineHistory<TState, TStimulus> history)
+        IStateMap<TState, TStimulus> stateTransitions, IGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
     {
         return new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
-            stateGuard, history);
+            guardRegistry, history);
     }
 }
 
@@ -39,7 +38,7 @@ public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMa
     private readonly IStateMap<TState, TStimulus> _stateTransitions;
 
     // Guards for transitions
-    private readonly IStateGuard<TState, TStimulus> _stateGuard;
+    private readonly IGuardRegistry<TState, TStimulus> _guardRegistry;
 
     // History
     private readonly IStateMachineHistory<TState, TStimulus> _history;
@@ -48,14 +47,14 @@ public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMa
         IActionRegistry<TState, TStimulus> enterActions,
         IActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
-        IStateGuard<TState, TStimulus> stateGuard,
+        IGuardRegistry<TState, TStimulus> guardRegistry,
         IStateMachineHistory<TState, TStimulus> history)
     {
         CurrentState = initialState;
         _enterActions = enterActions;
         _leaveActions = leaveActions;
         _stateTransitions = stateTransitions;
-        _stateGuard = stateGuard;
+        _guardRegistry = guardRegistry;
         _history = history;
     }
 
@@ -65,9 +64,9 @@ public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMa
 
     public TState CurrentState { get; private set; }
 
-    public IEnumerable<HistoryItem<TState, TStimulus>> History => _history;
+    public IEnumerable<IHistoryItem<TState, TStimulus>> History => _history;
 
-    public bool Post(TStimulus stimulus)
+    public async Task<bool> Post(TStimulus stimulus, CancellationToken cancellationToken = default)
     {
         // Unable to get the next state with the supplied stimulus
         if (!_stateTransitions.CheckTransition(CurrentState, stimulus, out var next_state))
@@ -91,7 +90,7 @@ public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMa
 
         var transition = new Transition<TState, TStimulus> { From = CurrentState, To = next_state, Reason = stimulus };
 
-        if (!_stateGuard.CheckTransition(transition))
+        if (! await _guardRegistry.CheckTransition(transition))
         {
             return false;
         }

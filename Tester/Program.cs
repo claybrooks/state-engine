@@ -1,9 +1,7 @@
 ﻿using FluentState;
-using FluentState.Machine;
-using FluentState.MachineParts;
 using Tester;
 
-void PlayQuickStopAction(Transition<State, Stimulus> transition)
+void PlayQuickStopAction(ITransition<State, Stimulus> transition)
 {
     Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
 }
@@ -11,7 +9,7 @@ void PlayQuickStopAction(Transition<State, Stimulus> transition)
 var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithUnboundedHistory()
     .WithEnterAction<DebugTransition>()
-    .WithEnterAction(new AnimationAction())
+    .WithEnterAction(new AnimationTransitionAction())
     .WithState(State.Idle, sb =>
     {
         sb.CanTransitionTo(State.Walking, Stimulus.Walk)
@@ -31,7 +29,7 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
             .CanTransitionTo(State.Idle, Stimulus.Stop)
             .CanTransitionTo(State.Idle, Stimulus.QuickStop)
 
-            .WithLeaveGuard<QuickStopGuard>(State.Idle, Stimulus.QuickStop)
+            .WithLeaveGuard<QuickStopTransitionGuard>(State.Idle, Stimulus.QuickStop)
             .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction);
     })
     .WithState(State.Crouched, sb =>
@@ -80,19 +78,19 @@ do
     switch (key)
     {
         case ConsoleKey.W:
-            await state_machine.PostAsync(Stimulus.Walk);
+            await state_machine.Post(Stimulus.Walk);
             break;
         case ConsoleKey.C:
-            await state_machine.PostAsync(Stimulus.Crouch);
+            await state_machine.Post(Stimulus.Crouch);
             break;
         case ConsoleKey.R:
-            await state_machine.PostAsync(Stimulus.Run);
+            await state_machine.Post(Stimulus.Run);
             break;
         case ConsoleKey.S:
-            await state_machine.PostAsync(Stimulus.Stop);
+            await state_machine.Post(Stimulus.Stop);
             break;
         case ConsoleKey.Q:
-            await state_machine.PostAsync(Stimulus.QuickStop);
+            await state_machine.Post(Stimulus.QuickStop);
             break;
     }
 
@@ -101,46 +99,48 @@ do
 //var serializer = new FluentState.Persistence.JsonSerializer<State, Stimulus>(new StateTypeConverter(), new StimulusTypeConverter());
 //await serializer.Save(state_machine, "stateMachine.json");
 
-await state_machine.PostAsync(Stimulus.Walk);
-await state_machine.PostAsync(Stimulus.Crouch);
-await state_machine.PostAsync(Stimulus.Stop);
-await state_machine.PostAsync(Stimulus.Stop);
-await state_machine.PostAsync(Stimulus.Run);
-await state_machine.PostAsync(Stimulus.QuickStop);
-await state_machine.PostAsync(Stimulus.Crouch);
-await state_machine.PostAsync(Stimulus.Walk);
-await state_machine.PostAsync(Stimulus.Stop);
-await state_machine.PostAsync(Stimulus.Stop);
+await state_machine.Post(Stimulus.Walk);
+await state_machine.Post(Stimulus.Crouch);
+await state_machine.Post(Stimulus.Stop);
+await state_machine.Post(Stimulus.Stop);
+await state_machine.Post(Stimulus.Run);
+await state_machine.Post(Stimulus.QuickStop);
+await state_machine.Post(Stimulus.Crouch);
+await state_machine.Post(Stimulus.Walk);
+await state_machine.Post(Stimulus.Stop);
+await state_machine.Post(Stimulus.Stop);
 
 await state_machine.DisposeAsync();
 
-public class AnimationAction : IAction<State, Stimulus>
+public class AnimationTransitionAction : ITransitionAction<State, Stimulus>
 {
-    public void OnTransition(Transition<State, Stimulus> transition)
+    public Task OnTransition(ITransition<State, Stimulus> transition)
     {
         Console.WriteLine($"Playing {transition.From}->{transition.To} animation");
+        return Task.CompletedTask;
     }
 }
 
-public class DebugTransition: IAction<State, Stimulus>
+public class DebugTransition: ITransitionAction<State, Stimulus>
 {
-    public void OnTransition(Transition<State, Stimulus> transition)
+    public Task OnTransition(ITransition<State, Stimulus> transition)
     {
         Console.WriteLine($"Leaving {transition.From}, Entering {transition.To}, Because Of {transition.Reason}");
+        return Task.CompletedTask;
     }
 }
 
-public class QuickStopGuard : IGuard<State, Stimulus>
+public class QuickStopTransitionGuard : ITransitionGuard<State, Stimulus>
 {
     private DateTime _dateOfLastQuickStop = DateTime.UnixEpoch;
 
-    public bool Check(Transition<State, Stimulus> transition)
+    public Task<bool> Check(ITransition<State, Stimulus> transition)
     { 
         var success = (DateTime.Now - _dateOfLastQuickStop).TotalSeconds > 5;
         if (success)
         {
             _dateOfLastQuickStop = DateTime.Now;
         }
-        return success;
+        return Task.FromResult(success);
     }
 }

@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using DotNetGraph;
 using DotNetGraph.Extensions;
 using DotNetGraph.Node;
-using FluentState.MachineParts;
 
-namespace FluentState.Visualizer;
+namespace FluentState;
 
 public interface IVisualizer
 {
@@ -17,19 +16,24 @@ public interface IVisualizer
     string CreateDot(string stateMachineName);
 }
 
-public class Visualizer<TState, TStimulus> : IVisualizer
+internal sealed class Visualizer<TState, TStimulus> : IVisualizer
     where TState : struct
     where TStimulus : struct
 {
     private readonly TState _initialState;
     private readonly IStateMapValidation<TState, TStimulus> _stateMap;
-    private readonly IStateGuardValidation<TState, TStimulus> _guardValidation;
+    private readonly IGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
+    private readonly IValidationResult? _validationResult;
 
-    public Visualizer(TState initialState, IStateMapValidation<TState, TStimulus> stateMap,
-        IStateGuardValidation<TState, TStimulus> guardValidation)
+    public Visualizer(
+        TState initialState,
+        IStateMapValidation<TState, TStimulus> stateMap,
+        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
+        IValidationResult? validationResult)
     {
         this._stateMap = stateMap;
-        this._guardValidation = guardValidation;
+        this._guardRegistryValidation = guardRegistryValidation;
+        _validationResult = validationResult;
         _initialState = initialState;
     }
 
@@ -48,7 +52,7 @@ public class Visualizer<TState, TStimulus> : IVisualizer
         };
 
         var nodes = _stateMap.TopLevelStates;
-        var guarded_transitions = _guardValidation.GuardTransitions;
+        var guarded_transitions = _guardRegistryValidation.GuardTransitions;
 
         foreach (var node in nodes)
         {
