@@ -24,8 +24,15 @@ public class VisualizationRules
     public bool DisplayActions { get; set; } = true;
 }
 
+internal abstract class AbstractVisualizer : IVisualizer
+{
+    private static long _nodeCounter;
+    protected static long NodeCounter => ++_nodeCounter;
+    public abstract Task CreateDot(string stateMachineName, string fullPathToOutputFile, CancellationToken token = default);
+    public abstract string CreateDot(string stateMachineName);
+}
 
-internal sealed class Visualizer<TState, TStimulus> : IVisualizer
+internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
     where TState : struct
     where TStimulus : struct
 {
@@ -36,6 +43,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
     private readonly IValidationResult<TState, TStimulus>? _validationResult;
     private readonly IActionRegistryValidation<TState, TStimulus> _enterActionRegistryValidation;
     private readonly IActionRegistryValidation<TState, TStimulus> _leaveActionRegistryValidation;
+
 
     public Visualizer(
         VisualizationRules rules,
@@ -55,13 +63,13 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
         _initialState = initialState;
     }
 
-    public async Task CreateDot(string stateMachineName, string fullPathToOutputFile, CancellationToken token = default)
+    public override async Task CreateDot(string stateMachineName, string fullPathToOutputFile, CancellationToken token = default)
     {
         var data = CreateDot(stateMachineName);
         await File.WriteAllTextAsync(fullPathToOutputFile, data, token);
     }
 
-    public string CreateDot(string stateMachineName)
+    public override string CreateDot(string stateMachineName)
     {
         var graph = DoBuildGraph(stateMachineName);
         DoHighlightErrors(graph);
@@ -109,6 +117,15 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
         var from_node_id = $"{transition.From}";
         var to_node_id = $"{transition.To}";
 
+        graph.AddOrGetNode(from_node_id, ns =>
+        {
+            ns.Color = Color.Green;
+        });
+        graph.AddOrGetNode(to_node_id, ns =>
+        {
+            ns.Color = Color.Green;
+        });
+
         var state_wide_leave_actions = leaveActionRegistryValidation.StateWideActions.GetValueOrDefault(transition.From, Enumerable.Empty<string>());
         var state_wide_enter_actions = entryActionRegistryValidation.StateWideActions.GetValueOrDefault(transition.From, Enumerable.Empty<string>());
 
@@ -122,7 +139,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
         // First check for guard
         if (guardedGuardRegistryValidation.GuardTransitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
         {
-            var guard_node_id = $"{transition.Reason}:{Guid.NewGuid()}";
+            var guard_node_id = $"{transition.Reason}:{NodeCounter}";
             var guard_node_label = $"{transition.Reason}";
             DoAddTransition(graph, last_action_node, last_action_label, guard_node_id, $"{guard_node_label}?", reason);
             reason = null;
@@ -146,7 +163,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
         {
             foreach (var global_leave_action in leaveActionRegistryValidation.GlobalActions)
             {
-                var global_leave_action_node = $"{global_leave_action}:{Guid.NewGuid()}";
+                var global_leave_action_node = $"{global_leave_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, global_leave_action_node, global_leave_action, reason);
                 reason = null;
                 last_action_node = global_leave_action_node;
@@ -161,7 +178,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var state_wide_leave_action in state_wide_leave_actions)
             {
-                var state_wide_leave_action_node = $"{state_wide_leave_action}:{Guid.NewGuid()}";
+                var state_wide_leave_action_node = $"{state_wide_leave_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, state_wide_leave_action_node, state_wide_leave_action, reason);
                 reason = null;
                 last_action_node = state_wide_leave_action_node;
@@ -176,7 +193,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var transition_leave_action in transition_leave_actions)
             {
-                var transition_leave_action_node = $"{transition_leave_action}:{Guid.NewGuid()}";
+                var transition_leave_action_node = $"{transition_leave_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, transition_leave_action_node, transition_leave_action, reason);
                 reason = null;
                 last_action_node = transition_leave_action_node;
@@ -191,7 +208,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var global_enter_action in entryActionRegistryValidation.GlobalActions)
             {
-                var global_enter_action_node = $"{global_enter_action}:{Guid.NewGuid()}";
+                var global_enter_action_node = $"{global_enter_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, global_enter_action_node, global_enter_action, reason);
                 reason = null;
                 last_action_node = global_enter_action_node;
@@ -206,7 +223,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var state_wide_enter_action in state_wide_enter_actions)
             {
-                var state_wide_enter_action_node = $"{state_wide_enter_action}:{Guid.NewGuid()}";
+                var state_wide_enter_action_node = $"{state_wide_enter_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, state_wide_enter_action_node, state_wide_enter_action, reason);
                 reason = null;
                 last_action_node = state_wide_enter_action_node;
@@ -221,7 +238,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var transition_enter_action in transition_enter_actions)
             {
-                var transition_enter_action_node = $"{transition_enter_action}:{Guid.NewGuid()}";
+                var transition_enter_action_node = $"{transition_enter_action}:{NodeCounter}";
                 DoAddTransition(graph, last_action_node, last_action_label, transition_enter_action_node, transition_enter_action, reason);
                 reason = null;
                 last_action_node = transition_enter_action_node;
@@ -326,9 +343,15 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
 public static class Extension
 {
-    public static DotNode? GetNode(this DotGraph graph, string id)
+    public static DotNode? GetNode(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
     {
-        return graph.Elements.OfType<DotNode>().FirstOrDefault(e => e.Identifier == id);
+        var node = graph.Elements.OfType<DotNode>().FirstOrDefault(e => e.Identifier == id);
+        if (node != null && nodeSetup != null)
+        {
+            nodeSetup(node);
+        }
+
+        return node;
     }
 
     public static DotNode AddOrGetNode(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
