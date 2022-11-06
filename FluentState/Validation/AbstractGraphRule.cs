@@ -28,7 +28,7 @@ public abstract class AbstractGraphRule<TState, TStimulus> : AbstractValidationR
     where TState : struct
     where TStimulus : struct
 {
-    private static TraverseResult<TState>? _traverseResults = null;
+    private static TraverseResult<TState>? _traverseResults;
 
     public TraverseResult<TState> TraverseStateMachine(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation)
     {

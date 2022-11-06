@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,13 +10,16 @@ public interface IActionRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    IReadOnlyList<ITransition<TState, TStimulus>> TransitionActionTransitions { get; }
+    IEnumerable<string> GlobalActions { get; }
+    IReadOnlyDictionary<TState, IEnumerable<string>> StateWideActions { get; }
+    IReadOnlyDictionary<ITransition<TState, TStimulus>, IEnumerable<string>> ActionsOnTransition { get; }
 }
 
 public interface ITransitionAction<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
+    string Id { get; }
     Task OnTransition(ITransition<TState, TStimulus> transition);
 }
 
@@ -29,34 +33,68 @@ public interface IActionRegistry<TState, TStimulus> where TState : struct where 
     void Trigger(TState state, ITransition<TState, TStimulus> transition);
 }
 
-internal sealed class DelegateTransitionAction<TState, TStimulus> : ITransitionAction<TState, TStimulus>
+internal abstract class AbstractDelegateTransitionAction<TState, TStimulus> : ITransitionAction<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    private readonly string _filePath;
+    private readonly string _caller;
+    private readonly int _lineNumber;
+    private readonly string? _idOverride;
+    protected AbstractDelegateTransitionAction(string? idOverride, string filePath, string caller, int lineNumber)
+    {
+        _idOverride = idOverride;
+        _filePath = filePath;
+        _caller = caller;
+        _lineNumber = lineNumber;
+    }
+
+    public string Id => _idOverride ?? $"{Path.GetFileName(_filePath)}.{_caller}:{_lineNumber}";
+
+    public abstract Task OnTransition(ITransition<TState, TStimulus> transition);
+}
+
+internal sealed class DelegateTransitionAction<TState, TStimulus> : AbstractDelegateTransitionAction<TState, TStimulus>
     where TState : struct where TStimulus : struct
 {
     private readonly Action<ITransition<TState, TStimulus>> _delegate;
-
-    public DelegateTransitionAction(Action<ITransition<TState, TStimulus>> @delegate)
+    public DelegateTransitionAction(Action<ITransition<TState, TStimulus>> @delegate,
+        string? idOverride,
+        string filePath,
+        string caller,
+        int lineNumber) : base(idOverride,
+        filePath,
+        caller,
+        lineNumber)
     {
         _delegate = @delegate;
     }
 
-    public Task OnTransition(ITransition<TState, TStimulus> transition)
+    public override Task OnTransition(ITransition<TState, TStimulus> transition)
     {
         _delegate(transition);
         return Task.CompletedTask;
     }
 }
 
-internal sealed class AsyncDelegateTransitionAction<TState, TStimulus> : ITransitionAction<TState, TStimulus>
+internal sealed class AsyncDelegateTransitionAction<TState, TStimulus> : AbstractDelegateTransitionAction<TState, TStimulus>
     where TState : struct where TStimulus : struct
 {
     private readonly Func<ITransition<TState, TStimulus>, Task> _delegate;
 
-    public AsyncDelegateTransitionAction(Func<ITransition<TState, TStimulus>, Task> @delegate)
+    public AsyncDelegateTransitionAction(Func<ITransition<TState, TStimulus>, Task> @delegate,
+        string? idOverride,
+        string filePath,
+        string caller,
+        int lineNumber) : base(idOverride,
+        filePath,
+        caller,
+        lineNumber)
     {
         _delegate = @delegate;
     }
 
-    public async Task OnTransition(ITransition<TState, TStimulus> transition)
+    public override async Task OnTransition(ITransition<TState, TStimulus> transition)
     {
         await _delegate(transition);
     }
@@ -123,5 +161,13 @@ internal sealed class ActionRegistry<TState, TStimulus> : IActionRegistry<TState
         }
     }
 
-    public IReadOnlyList<ITransition<TState, TStimulus>> TransitionActionTransitions => _transitionActions.Keys.ToList();
+    public IEnumerable<string> GlobalActions => _globalActions.Select(ta => ta.Id).ToList();
+
+    public IReadOnlyDictionary<TState, IEnumerable<string>> StateWideActions =>
+        _stateActions.ToDictionary(
+            kvp => kvp.Key, kvp => kvp.Value.Select(ta => ta.Id));
+
+    public IReadOnlyDictionary<ITransition<TState, TStimulus>, IEnumerable<string>> ActionsOnTransition =>
+        _transitionActions.ToDictionary(
+            kvp => kvp.Key, kvp => kvp.Value.Select(t => t.Id), new TransitionComparer<TState, TStimulus>());
 }

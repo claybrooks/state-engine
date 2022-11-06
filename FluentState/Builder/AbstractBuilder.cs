@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Runtime.CompilerServices;
 
 namespace FluentState;
 
@@ -20,8 +22,12 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// Adds a trigger for any state enter event
     /// </summary>
     /// <param name="action"></param>
+    /// <param name="idOverride"></param>
+    /// <param name="filePath"></param>
+    /// <param name="caller"></param>
+    /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state enter event
@@ -41,8 +47,12 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// Adds a trigger for any state leave event
     /// </summary>
     /// <param name="action"></param>
+    /// <param name="idOverride"></param>
+    /// <param name="filePath"></param>
+    /// <param name="caller"></param>
+    /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action);
+    IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state leave event
@@ -80,7 +90,6 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="options"></param>
     /// <returns></returns>
     IValidationResult<TState, TStimulus> Validate();
     
@@ -93,9 +102,22 @@ public interface IBuilder<out TStateMachine, TState, TStimulus>
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="stateMachineName"></param>
     /// <returns></returns>
     IVisualizer Visualizer { get; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="configureRules"></param>
+    /// <returns></returns>
+    IBuilder<TStateMachine, TState, TStimulus> WithVisualizationRules(Action<VisualizationRules> configureRules);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="rules"></param>
+    /// <returns></returns>
+    IBuilder<TStateMachine, TState, TStimulus> WithVisualizationRules(VisualizationRules rules);
 }
 
 public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuilder<TStateMachine, TState, TStimulus>
@@ -106,13 +128,14 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
     private readonly TState _initialState;
     private readonly IStateMachineFactory<TStateMachine, TState, TStimulus> _factory;
 
+    private VisualizationRules _rules = new();
     private readonly StateMap<TState, TStimulus> _stateMap = new();
     private readonly ActionRegistry<TState, TStimulus> _enterActionRegistry = new();
     private readonly ActionRegistry<TState, TStimulus> _leaveActionRegistry = new();
     private readonly GuardRegistry<TState, TStimulus> _guardRegistry = new();
     private readonly StateMachineHistory<TState, TStimulus> _history = new();
 
-    private IValidationResult<TState, TStimulus>? _validationResult = null;
+    private IValidationResult<TState, TStimulus>? _validationResult;
 
     protected AbstractBuilder(TState initialState, IStateMachineFactory<TStateMachine, TState, TStimulus> factory)
     {
@@ -131,9 +154,9 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
 
     #region Global Enter Actions
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
-        return WithEnterAction(new DelegateTransitionAction<TState, TStimulus>(action));
+        return WithEnterAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
 
     public IBuilder<TStateMachine, TState, TStimulus> WithEnterAction<TAction>()
@@ -152,9 +175,9 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
 
     #region Global Leave Actions
 
-    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action)
+    public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
-        return WithLeaveAction(new DelegateTransitionAction<TState, TStimulus>(action));
+        return WithLeaveAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
 
     public IBuilder<TStateMachine, TState, TStimulus> WithLeaveAction<TAction>()
@@ -197,8 +220,22 @@ public abstract class AbstractBuilder<TStateMachine, TState, TStimulus> : IBuild
         return _validationResult;
     }
 
+    public IBuilder<TStateMachine, TState, TStimulus> WithVisualizationRules(Action<VisualizationRules> configureRules)
+    {
+        VisualizationRules rules = new();
+        configureRules(rules);
+        return WithVisualizationRules(rules);
+    }
+    
+    public IBuilder<TStateMachine, TState, TStimulus> WithVisualizationRules(VisualizationRules rules)
+    {
+        _rules = rules;
+        return this;
+    }
+
     public IVisualizer Visualizer =>
-        new Visualizer<TState, TStimulus>(_initialState,
+        new Visualizer<TState, TStimulus>(_rules,
+            _initialState,
             _stateMap,
             _enterActionRegistry,
             _leaveActionRegistry,

@@ -1,12 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetGraph;
-using DotNetGraph.Attributes;
-using DotNetGraph.Core;
 using DotNetGraph.Edge;
 using DotNetGraph.Extensions;
 using DotNetGraph.Node;
@@ -20,10 +19,17 @@ public interface IVisualizer
     string CreateDot(string stateMachineName);
 }
 
+public class VisualizationRules
+{
+    public bool DisplayActions { get; set; } = true;
+}
+
+
 internal sealed class Visualizer<TState, TStimulus> : IVisualizer
     where TState : struct
     where TStimulus : struct
 {
+    private readonly VisualizationRules _rules;
     private readonly TState _initialState;
     private readonly IStateMapValidation<TState, TStimulus> _stateMap;
     private readonly IGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
@@ -32,6 +38,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
     private readonly IActionRegistryValidation<TState, TStimulus> _leaveActionRegistryValidation;
 
     public Visualizer(
+        VisualizationRules rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMap,
         IActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
@@ -39,6 +46,7 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
         IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
         IValidationResult<TState, TStimulus>? validationResult)
     {
+        _rules = rules;
         _stateMap = stateMap;
         _enterActionRegistryValidation = enterActionRegistryValidation;
         _leaveActionRegistryValidation = leaveActionRegistryValidation;
@@ -70,17 +78,12 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
             Directed = true,
             Strict = true
         };
-        
-        var guarded_transitions = _guardRegistryValidation.GuardTransitions;
-        var entry_actions = _enterActionRegistryValidation.TransitionActionTransitions;
-        var leave_actions = _leaveActionRegistryValidation.TransitionActionTransitions;
-
         foreach (var node in _stateMap.TopLevelStates)
         {
             var state_node_id = $"{node}";
 
             var is_starting_node = node.Equals(_initialState);
-            var state_node = graph.AddOrGetNode(state_node_id, ns =>
+            graph.AddOrGetNode(state_node_id, ns =>
             {
                 ns.Shape = is_starting_node ? DotNodeShape.Pentagon : DotNodeShape.Square;
                 ns.Color = is_starting_node ? Color.Green : Color.Black;
@@ -88,61 +91,168 @@ internal sealed class Visualizer<TState, TStimulus> : IVisualizer
 
             foreach (var state_transition in _stateMap.StateTransitions(node))
             {
-                var to_node_id = $"{state_transition.Value}";
-
                 var transition = new Transition<TState, TStimulus>{From = node, To = state_transition.Value, Reason = state_transition.Key};
-
-                if (guarded_transitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
-                {
-                    DoAddGuardedTransition(graph, transition);
-                }
-                else
-                {
-                    DoAddTransition(graph, transition);
-                }
+                DoAddTransition(graph, _rules, transition, _guardRegistryValidation, _enterActionRegistryValidation, _leaveActionRegistryValidation);
             }
         }
 
         return graph;
     }
 
-    private void DoAddGuardedTransition(DotGraph graph, ITransition<TState, TStimulus> transition)
+    private static void DoAddTransition(DotGraph graph,
+        VisualizationRules rules,
+        ITransition<TState, TStimulus> transition,
+        IGuardRegistryValidation<TState, TStimulus> guardedGuardRegistryValidation,
+        IActionRegistryValidation<TState, TStimulus> entryActionRegistryValidation,
+        IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation)
     {
-        var guard_node_id = $"{transition.Reason}";
-        var guard_node = graph.AddOrGetNode(guard_node_id, ns =>
-        {
-            ns.Shape = DotNodeShape.Diamond;
-            ns.Color = Color.DarkOrange;
-            ns.Label = $"{guard_node_id}?";
-        });
+        var from_node_id = $"{transition.From}";
+        var to_node_id = $"{transition.To}";
 
-        var from_node = graph.AddOrGetNode($"{transition.From}");
-        var to_node = graph.AddOrGetNode($"{transition.To}");
+        var state_wide_leave_actions = leaveActionRegistryValidation.StateWideActions.GetValueOrDefault(transition.From, Enumerable.Empty<string>());
+        var state_wide_enter_actions = entryActionRegistryValidation.StateWideActions.GetValueOrDefault(transition.From, Enumerable.Empty<string>());
 
-        graph.AddEdge(from_node, guard_node, edge =>
-        {
-            edge.Label = $"{guard_node_id}";
-        });
+        var transition_leave_actions = leaveActionRegistryValidation.ActionsOnTransition.GetValueOrDefault(transition, Enumerable.Empty<string>());
+        var transition_enter_actions = entryActionRegistryValidation.ActionsOnTransition.GetValueOrDefault(transition, Enumerable.Empty<string>());
+        
+        var last_action_node = from_node_id;
+        var last_action_label = from_node_id;
+        var reason = $"{transition.Reason}";
 
-        graph.AddEdge(guard_node, to_node, edge =>
+        // First check for guard
+        if (guardedGuardRegistryValidation.GuardTransitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
         {
-            edge.Label = "Yes";
-        });
+            var guard_node_id = $"{transition.Reason}:{Guid.NewGuid()}";
+            var guard_node_label = $"{transition.Reason}";
+            DoAddTransition(graph, last_action_node, last_action_label, guard_node_id, $"{guard_node_label}?", reason);
+            reason = null;
+            last_action_node = guard_node_id;
+            last_action_label = guard_node_label;
 
-        graph.AddEdge(guard_node, from_node, edge =>
+            DoAddTransition(graph, last_action_node, last_action_label, from_node_id, from_node_id, "No");
+
+            reason = "Yes";
+            graph.AddOrGetNode(guard_node_id, ns =>
+            {
+                ns.Shape = DotNodeShape.Diamond;
+                ns.Color = Color.DarkOrange;
+            });
+        }
+
+        var action_node_shape = DotNodeShape.Rectangle;
+        var action_node_color = Color.Blue;
+
+        if (rules.DisplayActions)
         {
-            edge.Label = "No";
-        });
+            foreach (var global_leave_action in leaveActionRegistryValidation.GlobalActions)
+            {
+                var global_leave_action_node = $"{global_leave_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, global_leave_action_node, global_leave_action, reason);
+                reason = null;
+                last_action_node = global_leave_action_node;
+                last_action_label = global_leave_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+
+            foreach (var state_wide_leave_action in state_wide_leave_actions)
+            {
+                var state_wide_leave_action_node = $"{state_wide_leave_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, state_wide_leave_action_node, state_wide_leave_action, reason);
+                reason = null;
+                last_action_node = state_wide_leave_action_node;
+                last_action_label = state_wide_leave_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+
+            foreach (var transition_leave_action in transition_leave_actions)
+            {
+                var transition_leave_action_node = $"{transition_leave_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, transition_leave_action_node, transition_leave_action, reason);
+                reason = null;
+                last_action_node = transition_leave_action_node;
+                last_action_label = transition_leave_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+
+            foreach (var global_enter_action in entryActionRegistryValidation.GlobalActions)
+            {
+                var global_enter_action_node = $"{global_enter_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, global_enter_action_node, global_enter_action, reason);
+                reason = null;
+                last_action_node = global_enter_action_node;
+                last_action_label = global_enter_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+
+            foreach (var state_wide_enter_action in state_wide_enter_actions)
+            {
+                var state_wide_enter_action_node = $"{state_wide_enter_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, state_wide_enter_action_node, state_wide_enter_action, reason);
+                reason = null;
+                last_action_node = state_wide_enter_action_node;
+                last_action_label = state_wide_enter_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+
+            foreach (var transition_enter_action in transition_enter_actions)
+            {
+                var transition_enter_action_node = $"{transition_enter_action}:{Guid.NewGuid()}";
+                DoAddTransition(graph, last_action_node, last_action_label, transition_enter_action_node, transition_enter_action, reason);
+                reason = null;
+                last_action_node = transition_enter_action_node;
+                last_action_label = transition_enter_action;
+
+                graph.AddOrGetNode(last_action_node, ns =>
+                {
+                    ns.Color = action_node_color;
+                    ns.Shape = action_node_shape;
+                });
+            }
+        }
+
+        DoAddTransition(graph, last_action_node, last_action_label, to_node_id, to_node_id, reason);
     }
 
-    private void DoAddTransition(DotGraph graph, ITransition<TState, TStimulus> transition)
+    private static void DoAddTransition(DotGraph graph, string fromId, string fromLabel, string toId, string toLabel, string? reason = null)
     {
-        var from_node = graph.AddOrGetNode($"{transition.From}");
-        var to_node = graph.AddOrGetNode($"{transition.To}");
+        var from_node = graph.AddOrGetNode(fromId, ns =>
+        {
+            ns.Label = fromLabel;
+        });
+
+        var to_node = graph.AddOrGetNode(toId, ns =>
+        {
+            ns.Label = toLabel;
+        });
 
         graph.AddEdge(from_node, to_node, edge =>
         {
-            edge.Label = $"{transition.Reason}";
+            edge.Label = reason != null ? $"{reason}" : edge.Label;
         });
     }
 

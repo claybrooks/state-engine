@@ -8,7 +8,6 @@ void PlayQuickStopAction(ITransition<State, Stimulus> transition)
 
 var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(State.Idle)
     .WithUnboundedHistory()
-    .WithEnterAction<DebugTransition>()
     .WithEnterAction(new AnimationTransitionAction())
     .WithState(State.Idle, sb =>
     {
@@ -20,8 +19,7 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
     {
         sb.CanTransitionTo(State.Running, Stimulus.Run)
             .CanTransitionTo(State.Idle, Stimulus.Stop)
-            .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch)
-            .WithEnterAction(State.Idle, Stimulus.Stop, t => { Console.WriteLine("test"); });
+            .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch);
     })
     .WithState(State.Running, sb =>
     {
@@ -30,7 +28,7 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
             .CanTransitionTo(State.Idle, Stimulus.QuickStop)
 
             .WithLeaveGuard<QuickStopTransitionGuard>(State.Idle, Stimulus.QuickStop)
-            .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction);
+            .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
     })
     .WithState(State.Crouched, sb =>
     {
@@ -44,7 +42,9 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
     })
     .WithState(State.Test, sb =>
     {
-        sb.CanTransitionTo(State.Idle, Stimulus.QuickStop);
+        sb.CanTransitionTo(State.Idle, Stimulus.QuickStop)
+            .WithLeaveGuard<QuickStopTransitionGuard>(State.Idle, Stimulus.QuickStop)
+            .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
     });
 
 var validate = state_machine_builder.Validate();
@@ -108,6 +108,8 @@ await state_machine.DisposeAsync();
 
 public class AnimationTransitionAction : ITransitionAction<State, Stimulus>
 {
+    public string Id => nameof(AnimationTransitionAction);
+
     public Task OnTransition(ITransition<State, Stimulus> transition)
     {
         Console.WriteLine($"Playing {transition.From}->{transition.To} animation");
@@ -117,6 +119,8 @@ public class AnimationTransitionAction : ITransitionAction<State, Stimulus>
 
 public class DebugTransition: ITransitionAction<State, Stimulus>
 {
+    public string Id => nameof(DebugTransition);
+
     public Task OnTransition(ITransition<State, Stimulus> transition)
     {
         Console.WriteLine($"Leaving {transition.From}, Entering {transition.To}, Because Of {transition.Reason}");

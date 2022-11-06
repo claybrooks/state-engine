@@ -153,9 +153,9 @@ public sealed class UnreachableAction<TState, TStimulus> : AbstractValidationRul
         IActionRegistryValidation<TState, TStimulus> actionRegistryValidation,
         IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
-        var registered_transition_triggers = actionRegistryValidation.TransitionActionTransitions;
+        var registered_transition_triggers = actionRegistryValidation.ActionsOnTransition;
         
-        return registered_transition_triggers.Where(transition => !stateMapValidation.IsTransitionRegistered(transition)).ToList();
+        return registered_transition_triggers.Keys.Where(transition => !stateMapValidation.IsTransitionRegistered(transition)).ToList();
     }
 }
 
