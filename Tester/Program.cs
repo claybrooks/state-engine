@@ -1,5 +1,5 @@
 ﻿using StateEngine;
-using StateEngine.StateMachine.Deferred;
+using StateEngine.Deferred;
 using StateEngine.Validation;
 using StateEngine.Visualizer;
 using Tester;
@@ -9,7 +9,7 @@ void PlayQuickStopAction(ITransition<State, Stimulus> transition)
     Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
 }
 
-var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(State.Idle)
+var state_machine_builder = new PlayerAnimationStateEngineBuilder(State.Idle)
     .WithUnboundedHistory()
     .WithEnterAction(new AnimationTransitionAction())
     .WithState(State.Idle, sb =>
@@ -50,7 +50,7 @@ var state_machine_builder = new DeferredStateMachineBuilder<State, Stimulus>(Sta
             .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
     });
 
-var validator = state_machine_builder.Validator<ValidatorFactory<State, Stimulus>>(DefaultRules.Get<State, Stimulus>());
+var validator = state_machine_builder.Validator<ValidatorFactory<State, Stimulus>>(Rules.Get<State, Stimulus>());
 var results = validator.Validate();
 if (results.Errors.Any())
 {
@@ -95,7 +95,7 @@ do
 } while (key != ConsoleKey.Escape);
 
 //var serializer = new FluentState.Persistence.JsonSerializer<State, Stimulus>(new StateTypeConverter(), new StimulusTypeConverter());
-//await serializer.Save(state_machine, "stateMachine.json");
+//await serializer.Save(state_machine, "stateEngine.json");
 
 await state_machine.Post(Stimulus.Walk);
 await state_machine.Post(Stimulus.Crouch);
@@ -146,5 +146,13 @@ public class QuickStopTransitionGuard : ITransitionGuard<State, Stimulus>
             _dateOfLastQuickStop = DateTime.Now;
         }
         return Task.FromResult(success);
+    }
+}
+
+
+public class PlayerAnimationStateEngineBuilder : DeferredStateEngineBuilder<State, Stimulus>
+{
+    public PlayerAnimationStateEngineBuilder(State initialState) : base(initialState)
+    {
     }
 }

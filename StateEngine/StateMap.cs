@@ -1,6 +1,6 @@
 ﻿namespace StateEngine;
 
-public interface IStateMap<TState, TStimulus>
+public interface IStateMap<TState, in TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -18,7 +18,7 @@ public interface IStateMapValidation<TState, TStimulus>
     bool IsTransitionRegistered(ITransition<TState, TStimulus> transition);
 }
 
-public class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
+internal sealed class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

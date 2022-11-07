@@ -11,7 +11,7 @@ public interface IHistoryItem<out TState, out TStimulus>
     public DateTimeOffset When { get; }
 }
 
-public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<IHistoryItem<TState, TStimulus>>
+public interface IHistory<TState, TStimulus> : IEnumerable<IHistoryItem<TState, TStimulus>>
     where TState : struct
     where TStimulus : struct
 {
@@ -23,7 +23,7 @@ public interface IStateMachineHistory<TState, TStimulus> : IEnumerable<IHistoryI
     void Clear();
 }
 
-internal class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TStimulus>
+internal sealed class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -33,14 +33,14 @@ internal class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TStimulus>
     public DateTimeOffset When { get; set; }
 }
 
-internal class StateMachineHistory<TState, TStimulus> : IStateMachineHistory<TState, TStimulus>
+internal sealed class History<TState, TStimulus> : IHistory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     private readonly Queue<HistoryItem<TState, TStimulus>> _history = new();
     private int _size;
 
-    public StateMachineHistory(int size = -1)
+    public History(int size = -1)
     {
         _size = size;
         Enabled = false;

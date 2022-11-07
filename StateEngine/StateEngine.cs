@@ -1,27 +1,55 @@
-﻿namespace StateEngine.StateMachine;
+﻿namespace StateEngine;
 
-public sealed class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TState, TStimulus>, TState, TStimulus>
+public interface IStateEngine<out TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public StateMachineBuilder(TState initialState) : base(initialState, new StateMachineFactory<TState, TStimulus>())
+    /// <summary>
+    /// This does not consider failed transitions due to transitionGuardRegistry calls.  Only when there is no destination state based on
+    /// <see cref="StateEngine{TState,TStimulus}.CurrentState"/> and the provided <typeparamref name="TStimulus"/>
+    /// </summary>
+    bool ThrowExceptionOnFailedTransition { get; set; }
+
+    /// <summary>
+    /// Should most likely be turned off outside of development.  Helpful in determining possible bugs in your state machine
+    /// setup
+    /// </summary>
+    bool ThrowExceptionOnSameStateTransition { get; set; }
+    
+    TState CurrentState { get; }
+
+    /// <summary>
+    /// Queue's the provided <typeparamref name="TStimulus"/> to the state machine, but defers execution.
+    /// </summary>
+    /// <param name="stimulus"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task<bool> Post(TStimulus stimulus, CancellationToken token = default);
+    
+    IEnumerable<IHistoryItem<TState, TStimulus>> History { get; }
+}
+
+public sealed class StateEngineBuilder<TState, TStimulus> : Builder<IStateEngine<TState, TStimulus>, TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+{
+    public StateEngineBuilder(TState initialState) : base(initialState, new StateEngineFactory<TState, TStimulus>())
     {
     }
 }
 
-internal sealed class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<StateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class StateEngineFactory<TState, TStimulus> : IStateEngineFactory<IStateEngine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public StateMachine<TState, TStimulus> Create(TState initialState, ITransitionActionRegistry<TState, TStimulus> enterActions, ITransitionActionRegistry<TState, TStimulus> leaveActions,
-        IStateMap<TState, TStimulus> stateTransitions, ITransitionGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
+    public IStateEngine<TState, TStimulus> Create(TState initialState, ITransitionActionRegistry<TState, TStimulus> enterActions, ITransitionActionRegistry<TState, TStimulus> leaveActions,
+        IStateMap<TState, TStimulus> stateTransitions, ITransitionGuardRegistry<TState, TStimulus> guardRegistry, IHistory<TState, TStimulus> history)
     {
-        return new StateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
-            guardRegistry, history);
+        return new StateEngine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, guardRegistry, history);
     }
 }
 
-public sealed class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
+internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -36,14 +64,14 @@ public sealed class StateMachine<TState, TStimulus> : IStateMachine<TState, TSti
     private readonly ITransitionGuardRegistry<TState, TStimulus> _guardRegistry;
 
     // History
-    private readonly IStateMachineHistory<TState, TStimulus> _history;
+    private readonly IHistory<TState, TStimulus> _history;
 
-    public StateMachine(TState initialState,
+    public StateEngine(TState initialState,
         ITransitionActionRegistry<TState, TStimulus> enterActions,
         ITransitionActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
         ITransitionGuardRegistry<TState, TStimulus> guardRegistry,
-        IStateMachineHistory<TState, TStimulus> history)
+        IHistory<TState, TStimulus> history)
     {
         CurrentState = initialState;
         _enterActions = enterActions;
