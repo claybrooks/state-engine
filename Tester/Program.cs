@@ -1,5 +1,5 @@
 ﻿using StateEngine;
-using StateEngine.Deferred;
+using StateEngine.StateMachine.Deferred;
 using StateEngine.Validation;
 using StateEngine.Visualizer;
 using Tester;

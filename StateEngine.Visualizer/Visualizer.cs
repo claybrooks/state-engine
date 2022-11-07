@@ -11,8 +11,8 @@ public sealed class VisualizerFactory<TState, TStimulus> : IVisualizerFactory<TS
     where TStimulus : struct
 {
     public IVisualizer CreateVisualizer(VisualizationRules<TState, TStimulus> rules, TState initialState, IStateMapValidation<TState, TStimulus> stateMap,
-        IActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         return new Visualizer<TState, TStimulus>(rules, initialState, stateMap, enterActionRegistryValidation, leaveActionRegistryValidation, guardRegistryValidation);
     }
@@ -34,18 +34,18 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
     private readonly VisualizationRules<TState, TStimulus> _rules;
     private readonly TState _initialState;
     private readonly IStateMapValidation<TState, TStimulus> _stateMap;
-    private readonly IGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
-    private readonly IActionRegistryValidation<TState, TStimulus> _enterActionRegistryValidation;
-    private readonly IActionRegistryValidation<TState, TStimulus> _leaveActionRegistryValidation;
+    private readonly ITransitionGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
+    private readonly ITransitionActionRegistryValidation<TState, TStimulus> _enterActionRegistryValidation;
+    private readonly ITransitionActionRegistryValidation<TState, TStimulus> _leaveActionRegistryValidation;
 
 
     public Visualizer(
         VisualizationRules<TState, TStimulus> rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMap,
-        IActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         _rules = rules;
         _stateMap = stateMap;
@@ -105,9 +105,9 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
     private static void DoAddTransition(DotGraph graph,
         VisualizationRules<TState, TStimulus> rules,
         ITransition<TState, TStimulus> transition,
-        IGuardRegistryValidation<TState, TStimulus> guardedGuardRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> entryActionRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation)
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardedGuardRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> entryActionRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation)
     {
         var from_node_id = $"{transition.From}";
         var to_node_id = $"{transition.To}";
@@ -335,7 +335,7 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
     #endregion
 }
 
-public static class Extension
+internal static class Extension
 {
     public static DotNode? GetNode(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
     {

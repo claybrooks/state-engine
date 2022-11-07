@@ -1,25 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace StateEngine;
 
-namespace StateEngine;
-
-public interface IGuardRegistryValidation<TState, TStimulus>
+public interface ITransitionGuardRegistryValidation<out TState, out TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     IReadOnlyList<ITransition<TState, TStimulus>> GuardTransitions { get; }
 }
 
-public interface ITransitionGuard<TState, TStimulus>
+public interface ITransitionGuard<in TState, in TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     Task<bool> Check(ITransition<TState, TStimulus> transition);
 }
 
-public interface IGuardRegistry<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface ITransitionGuardRegistry<TState, TStimulus> where TState : struct where TStimulus : struct
 {
     bool Register(ITransition<TState, TStimulus> transition, Func<ITransition<TState, TStimulus>, bool> guard);
     bool Register<TGuard>(ITransition<TState, TStimulus> transition) where TGuard : ITransitionGuard<TState, TStimulus>, new();
@@ -59,7 +54,7 @@ internal sealed class AsyncDelegateTransitionGuard<TState, TStimulus> : ITransit
     }
 }
 
-internal sealed class GuardRegistry<TState, TStimulus> : IGuardRegistry<TState, TStimulus>, IGuardRegistryValidation<TState, TStimulus>
+internal sealed class GuardRegistry<TState, TStimulus> : ITransitionGuardRegistry<TState, TStimulus>, ITransitionGuardRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

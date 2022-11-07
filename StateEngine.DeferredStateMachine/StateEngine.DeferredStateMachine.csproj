@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>$(Authors)</Company>
-    <Description>StateMachine Validation implementation</Description>
+    <Description>Deferred StateMachine implementation</Description>
     <Authors>Clay Brooks</Authors>
     <Copyright>This is free and unencumbered software released into the public domain.</Copyright>
     <PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
@@ -20,6 +20,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StateEngine\StateEngine.csproj" />
+    <ProjectReference Include="..\StateEngine.StateMachine\StateEngine.StateMachine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Threading.Channels" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
-﻿namespace StateEngine;
-
+﻿namespace StateEngine.Validation;
 
 public abstract class AbstractValidationRule<TState, TStimulus> : IValidationRule<TState, TStimulus>
     where TState : struct
@@ -8,8 +7,8 @@ public abstract class AbstractValidationRule<TState, TStimulus> : IValidationRul
     protected List<IValidationError<TState, TStimulus>> Errors = new();
 
     public abstract IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 
     public IValidationResult<TState, TStimulus> Result => new ValidationResult<TState, TStimulus> {Errors = Errors};
 }

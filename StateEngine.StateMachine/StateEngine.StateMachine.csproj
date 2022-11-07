@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>$(Authors)</Company>
-    <Description>StateMachine Validation implementation</Description>
+    <Description>Immediate StateMachine implementation</Description>
     <Authors>Clay Brooks</Authors>
     <Copyright>This is free and unencumbered software released into the public domain.</Copyright>
     <PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StateEngine\StateEngine.csproj" />
+	  <ProjectReference Include="..\StateEngine\StateEngine.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿namespace StateEngine;
 
-namespace StateEngine;
-
-public interface IActionRegistryValidation<TState, TStimulus>
+public interface ITransitionActionRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -15,7 +9,7 @@ public interface IActionRegistryValidation<TState, TStimulus>
     IReadOnlyDictionary<ITransition<TState, TStimulus>, IEnumerable<string>> ActionsOnTransition { get; }
 }
 
-public interface ITransitionAction<TState, TStimulus>
+public interface ITransitionAction<in TState, in TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -23,7 +17,7 @@ public interface ITransitionAction<TState, TStimulus>
     Task OnTransition(ITransition<TState, TStimulus> transition);
 }
 
-public interface IActionRegistry<TState, TStimulus> where TState : struct where TStimulus : struct
+public interface ITransitionActionRegistry<TState, TStimulus> where TState : struct where TStimulus : struct
 {
     void Register(ITransitionAction<TState, TStimulus> transitionAction);
     void Register(TState state, ITransitionAction<TState, TStimulus> transitionAction);
@@ -100,7 +94,7 @@ internal sealed class AsyncDelegateTransitionAction<TState, TStimulus> : Abstrac
     }
 }
 
-internal sealed class ActionRegistry<TState, TStimulus> : IActionRegistry<TState, TStimulus>, IActionRegistryValidation<TState, TStimulus>
+internal sealed class TransitionAction<TState, TStimulus> : ITransitionActionRegistry<TState, TStimulus>, ITransitionActionRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

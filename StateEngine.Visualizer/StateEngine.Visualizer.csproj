@@ -1,10 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Company>$(Authors)</Company>
+    <Description>StateMachine visualization implementation</Description>
+    <Authors>Clay Brooks</Authors>
+    <Copyright>This is free and unencumbered software released into the public domain.</Copyright>
+    <PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
+    <PackageTags>statemachine;state;machine</PackageTags>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
     <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

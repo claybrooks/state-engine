@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StateEngine.Deferred\StateEngine.StateMachine.Deferred.csproj" />
+    <ProjectReference Include="..\StateEngine.DeferredStateMachine\StateEngine.DeferredStateMachine.csproj" />
     <ProjectReference Include="..\StateEngine.Validation\StateEngine.Validation.csproj" />
     <ProjectReference Include="..\StateEngine.Visualizer\StateEngine.Visualizer.csproj" />
     <ProjectReference Include="..\StateEngine\StateEngine.csproj" />

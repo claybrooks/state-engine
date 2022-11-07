@@ -1,4 +1,4 @@
-﻿namespace StateEngine;
+﻿namespace StateEngine.Validation;
 
 public static class DefaultRules
 {
@@ -31,8 +31,8 @@ public sealed class InitialStateIsUnregistered<TState, TStimulus> : AbstractVali
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         if (!stateMapValidation.HasTopLevelState(initialState))
         {
@@ -53,8 +53,8 @@ public sealed class UnregisteredEnumValues<TState, TStimulus> : AbstractValidati
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var states_not_in_state_map = Enum.GetValues(typeof(TState))
             .Cast<TState>()
@@ -76,8 +76,8 @@ public sealed class UnreachableStates<TState, TStimulus> : AbstractGraphRule<TSt
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var traverse_results = TraverseStateMachine(initialState, stateMapValidation);
         if (traverse_results.NonReachableNodes.Any())
@@ -99,8 +99,8 @@ public sealed class NoCycles<TState, TStimulus> : AbstractGraphRule<TState, TSti
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var traverse_results = TraverseStateMachine(initialState, stateMapValidation);
         if (traverse_results.IsCyclic)
@@ -117,8 +117,8 @@ public sealed class UnreachableAction<TState, TStimulus> : AbstractValidationRul
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var unreachable_enter_actions = DoFindUnreachableActions(enterRegistryValidation, stateMapValidation);
         var unreachable_leave_actions = DoFindUnreachableActions(leaveRegistryValidation, stateMapValidation);
@@ -146,7 +146,7 @@ public sealed class UnreachableAction<TState, TStimulus> : AbstractValidationRul
 
     
     private static IReadOnlyList<ITransition<TState, TStimulus>> DoFindUnreachableActions(
-        IActionRegistryValidation<TState, TStimulus> actionRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> actionRegistryValidation,
         IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
         var registered_transition_triggers = actionRegistryValidation.ActionsOnTransition;
@@ -160,8 +160,8 @@ public sealed class UnreachableGuard<TState, TStimulus> : AbstractValidationRule
     where TStimulus : struct
 {
     public override IValidationResult<TState, TStimulus> Run(TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         var unreachable_guards = DoFindUnreachableGuards(guardRegistryValidation, stateMapValidation);
 
@@ -178,7 +178,7 @@ public sealed class UnreachableGuard<TState, TStimulus> : AbstractValidationRule
     }
 
     private static IReadOnlyList<ITransition<TState, TStimulus>> DoFindUnreachableGuards(
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
         IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
         var registered_transitions = guardRegistryValidation.GuardTransitions;

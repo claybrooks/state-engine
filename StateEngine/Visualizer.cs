@@ -8,9 +8,9 @@ public interface IVisualizerFactory<TState, TStimulus>
         VisualizationRules<TState, TStimulus> rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMap,
-        IActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
+        ITransitionActionRegistryValidation<TState, TStimulus> enterActionRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> leaveActionRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }
 
 public interface IVisualizer

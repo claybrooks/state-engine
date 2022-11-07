@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace StateEngine;
+﻿namespace StateEngine;
 
 public interface IStateMap<TState, TStimulus>
     where TState : struct

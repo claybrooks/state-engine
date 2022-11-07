@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace StateEngine;
+﻿namespace StateEngine;
 
 public interface IValidationRule<TState, TStimulus>
     where TState : struct
@@ -9,9 +6,9 @@ public interface IValidationRule<TState, TStimulus>
 {
     public IValidationResult<TState, TStimulus> Run(TState initialState,
         IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }
 
 public interface IValidatorFactory<TState, TStimulus>
@@ -21,9 +18,9 @@ public interface IValidatorFactory<TState, TStimulus>
     IValidator<TState, TStimulus> Create(IEnumerable<IValidationRule<TState, TStimulus>> rules,
         TState initialState,
         IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
-        IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation,
+        ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }
 
 public interface IValidator<out TState, out TStimulus>

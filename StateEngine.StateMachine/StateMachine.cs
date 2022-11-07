@@ -1,48 +1,48 @@
-﻿namespace StateEngine.Immediate;
+﻿namespace StateEngine.StateMachine;
 
-public sealed class ImmediateStateMachineBuilder<TState, TStimulus> : AbstractBuilder<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class StateMachineBuilder<TState, TStimulus> : Builder<StateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public ImmediateStateMachineBuilder(TState initialState) : base(initialState, new ImmediateStateMachineFactory<TState, TStimulus>())
+    public StateMachineBuilder(TState initialState) : base(initialState, new StateMachineFactory<TState, TStimulus>())
     {
     }
 }
 
-internal sealed class ImmediateStateMachineFactory<TState, TStimulus> : IStateMachineFactory<ImmediateStateMachine<TState, TStimulus>, TState, TStimulus>
+internal sealed class StateMachineFactory<TState, TStimulus> : IStateMachineFactory<StateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public ImmediateStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
-        IStateMap<TState, TStimulus> stateTransitions, IGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
+    public StateMachine<TState, TStimulus> Create(TState initialState, ITransitionActionRegistry<TState, TStimulus> enterActions, ITransitionActionRegistry<TState, TStimulus> leaveActions,
+        IStateMap<TState, TStimulus> stateTransitions, ITransitionGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
+        return new StateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions,
             guardRegistry, history);
     }
 }
 
-public sealed class ImmediateStateMachine<TState, TStimulus> : IImmediateStateMachine<TState, TStimulus>
+public sealed class StateMachine<TState, TStimulus> : IStateMachine<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     // Action registries
-    private readonly IActionRegistry<TState, TStimulus> _enterActions;
-    private readonly IActionRegistry<TState, TStimulus> _leaveActions;
+    private readonly ITransitionActionRegistry<TState, TStimulus> _enterActions;
+    private readonly ITransitionActionRegistry<TState, TStimulus> _leaveActions;
 
     // Allowed transitions
     private readonly IStateMap<TState, TStimulus> _stateTransitions;
 
     // Guards for transitions
-    private readonly IGuardRegistry<TState, TStimulus> _guardRegistry;
+    private readonly ITransitionGuardRegistry<TState, TStimulus> _guardRegistry;
 
     // History
     private readonly IStateMachineHistory<TState, TStimulus> _history;
 
-    public ImmediateStateMachine(TState initialState,
-        IActionRegistry<TState, TStimulus> enterActions,
-        IActionRegistry<TState, TStimulus> leaveActions,
+    public StateMachine(TState initialState,
+        ITransitionActionRegistry<TState, TStimulus> enterActions,
+        ITransitionActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
-        IGuardRegistry<TState, TStimulus> guardRegistry,
+        ITransitionGuardRegistry<TState, TStimulus> guardRegistry,
         IStateMachineHistory<TState, TStimulus> history)
     {
         CurrentState = initialState;

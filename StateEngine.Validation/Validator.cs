@@ -6,8 +6,8 @@ public sealed class ValidatorFactory<TState, TStimulus> : IValidatorFactory<TSta
 
 {
     public IValidator<TState, TStimulus> Create(IEnumerable<IValidationRule<TState, TStimulus>> rules, TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation,
-        IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
-        IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+        ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation,
+        ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         return new Validator<TState, TStimulus>(rules, initialState, stateMapValidation, enterRegistryValidation, leaveRegistryValidation, guardRegistryValidation);
     }
@@ -20,11 +20,11 @@ internal sealed class Validator<TState, TStimulus> : IValidator<TState, TStimulu
     private readonly IEnumerable<IValidationRule<TState, TStimulus>> _rules;
     private readonly TState _initialState;
     private readonly IStateMapValidation<TState, TStimulus> _stateMapValidation;
-    private readonly IActionRegistryValidation<TState, TStimulus> _enterRegistryValidation;
-    private readonly IActionRegistryValidation<TState, TStimulus> _leaveRegistryValidation;
-    private readonly IGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
+    private readonly ITransitionActionRegistryValidation<TState, TStimulus> _enterRegistryValidation;
+    private readonly ITransitionActionRegistryValidation<TState, TStimulus> _leaveRegistryValidation;
+    private readonly ITransitionGuardRegistryValidation<TState, TStimulus> _guardRegistryValidation;
 
-    public Validator(IEnumerable<IValidationRule<TState, TStimulus>> rules, TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation, IActionRegistryValidation<TState, TStimulus> enterRegistryValidation, IActionRegistryValidation<TState, TStimulus> leaveRegistryValidation, IGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
+    public Validator(IEnumerable<IValidationRule<TState, TStimulus>> rules, TState initialState, IStateMapValidation<TState, TStimulus> stateMapValidation, ITransitionActionRegistryValidation<TState, TStimulus> enterRegistryValidation, ITransitionActionRegistryValidation<TState, TStimulus> leaveRegistryValidation, ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation)
     {
         this._rules = rules;
         this._initialState = initialState;

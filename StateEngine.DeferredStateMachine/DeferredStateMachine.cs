@@ -1,9 +1,8 @@
 ﻿using System.Threading.Channels;
-using StateEngine.Immediate;
 
-namespace StateEngine.Deferred;
+namespace StateEngine.StateMachine.Deferred;
 
-public sealed class DeferredStateMachineBuilder<TState, TStimulus> : AbstractBuilder<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
+public sealed class DeferredStateMachineBuilder<TState, TStimulus> : Builder<DeferredStateMachine<TState, TStimulus>, TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -16,10 +15,10 @@ internal sealed class DeferredStateMachineFactory<TState, TStimulus> : IStateMac
     where TState : struct
     where TStimulus : struct
 {
-    public DeferredStateMachine<TState, TStimulus> Create(TState initialState, IActionRegistry<TState, TStimulus> enterActions, IActionRegistry<TState, TStimulus> leaveActions,
-        IStateMap<TState, TStimulus> stateTransitions, IGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
+    public DeferredStateMachine<TState, TStimulus> Create(TState initialState, ITransitionActionRegistry<TState, TStimulus> enterActions, ITransitionActionRegistry<TState, TStimulus> leaveActions,
+        IStateMap<TState, TStimulus> stateTransitions, ITransitionGuardRegistry<TState, TStimulus> guardRegistry, IStateMachineHistory<TState, TStimulus> history)
     {
-        return new DeferredStateMachine<TState, TStimulus>(new ImmediateStateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, guardRegistry, history));
+        return new DeferredStateMachine<TState, TStimulus>(new StateMachine<TState, TStimulus>(initialState, enterActions, leaveActions, stateTransitions, guardRegistry, history));
     }
 }
 
@@ -28,14 +27,14 @@ public sealed class DeferredStateMachine<TState, TStimulus> : IDeferredStateMach
     where TStimulus : struct
 {
     // Synchronous machine that handles most of the work
-    private readonly IImmediateStateMachine<TState, TStimulus> _stateMachine;
+    private readonly IStateMachine<TState, TStimulus> _stateMachine;
 
     // Queue for holding stimuli
     private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Task _queueProcessingTask;
 
-    public DeferredStateMachine(IImmediateStateMachine<TState, TStimulus> stateMachine)
+    public DeferredStateMachine(IStateMachine<TState, TStimulus> stateMachine)
     {
         _stateMachine = stateMachine;
         _queueProcessingTask = Task.Factory.StartNew(async () =>

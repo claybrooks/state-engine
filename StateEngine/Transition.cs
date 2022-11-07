@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace StateEngine;
+﻿namespace StateEngine;
 
 public interface ITransition<out TState, out TStimulus>
     where TState : struct
@@ -32,7 +29,7 @@ public sealed class Transition<TState, TStimulus> : ITransition<TState, TStimulu
     }
 }
 
-internal sealed class TransitionComparer<TState, TStimulus> : ITransitionComparer<TState, TStimulus>
+public sealed class TransitionComparer<TState, TStimulus> : ITransitionComparer<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

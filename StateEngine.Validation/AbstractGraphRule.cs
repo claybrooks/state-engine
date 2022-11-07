@@ -1,4 +1,4 @@
-﻿namespace StateEngine;
+﻿namespace StateEngine.Validation;
 
 public class TraverseResult<TState>
     where TState : struct

@@ -12,9 +12,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateEngine.StateMachine.Immediate", "StateEngine.Immediate\StateEngine.StateMachine.Immediate.csproj", "{87374B53-73A4-4D6A-BFBE-F0536070EB28}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateEngine.StateMachine", "StateEngine.StateMachine\StateEngine.StateMachine.csproj", "{87374B53-73A4-4D6A-BFBE-F0536070EB28}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateEngine.StateMachine.Deferred", "StateEngine.Deferred\StateEngine.StateMachine.Deferred.csproj", "{A4C008D7-3B87-498E-8EAC-313C26AB7791}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateEngine.DeferredStateMachine", "StateEngine.DeferredStateMachine\StateEngine.DeferredStateMachine.csproj", "{A4C008D7-3B87-498E-8EAC-313C26AB7791}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateEngine.Visualizer", "StateEngine.Visualizer\StateEngine.Visualizer.csproj", "{EB5FBE18-292C-40FE-9A98-5E697D266A5E}"
 EndProject
