@@ -25,5 +25,5 @@ public class VisualizationRules<TState, TStimulus>
     where TStimulus : struct
 {
     public bool DisplayActions { get; set; } = true;
-    public IValidationResult<TState, TStimulus>? ConsiderValidationResults { get; set; } = null;
+    public IValidationResult<TState, TStimulus>? ValidationResults { get; set; } = null;
 }

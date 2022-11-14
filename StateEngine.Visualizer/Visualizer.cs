@@ -64,9 +64,9 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
     public override string CreateDot(string stateMachineName)
     {
         var graph = DoBuildGraph(stateMachineName);
-        if (_rules.ConsiderValidationResults != null)
+        if (_rules.ValidationResults != null)
         {
-            DoHighlightErrors(graph, _rules.ConsiderValidationResults);
+            DoHighlightErrors(graph, _rules.ValidationResults);
         }
 
         return graph.Compile(indented: true);

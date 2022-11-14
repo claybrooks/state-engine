@@ -88,16 +88,8 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// 
     /// </summary>
     /// <returns></returns>
-    IValidator<TState, TStimulus> Validator<TValidatorFactory>(IEnumerable<IValidationRule<TState, TStimulus>> rules) where TValidatorFactory : IValidatorFactory<TState, TStimulus>, new();
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <typeparam name="TVisualizerFactory"></typeparam>
-    /// <param name="configureRules"></param>
-    /// <returns></returns>
-    IVisualizer Visualizer<TVisualizerFactory>(Action<VisualizationRules<TState, TStimulus>> configureRules)
-        where TVisualizerFactory : IVisualizerFactory<TState, TStimulus>, new();
+    IValidator<TState, TStimulus> Validator<TValidatorFactory>(IEnumerable<IValidationRule<TState, TStimulus>> rules)
+        where TValidatorFactory : IValidatorFactory<TState, TStimulus>, new();
 
     /// <summary>
     /// 
@@ -397,13 +389,6 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
         var factory = new TValidatorFactory();
         return factory.Create(rules, _initialState, _stateMap, _enterActionRegistry, _leaveActionRegistry,
             _guardRegistry);
-    }
-
-    public IVisualizer Visualizer<TVisualizerFactory>(Action<VisualizationRules<TState, TStimulus>> configureRules) where TVisualizerFactory : IVisualizerFactory<TState, TStimulus>, new()
-    {
-        VisualizationRules<TState, TStimulus> rules = new();
-        configureRules(rules);
-        return Visualizer<TVisualizerFactory>(rules);
     }
 
     public IVisualizer Visualizer<TVisualizerFactory>(VisualizationRules<TState, TStimulus>? rules = null) where TVisualizerFactory : IVisualizerFactory<TState, TStimulus>, new()
