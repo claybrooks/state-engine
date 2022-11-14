@@ -23,7 +23,7 @@
 	<ItemGroup>
 		<None Include="README.md">
 			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
+			<PackagePath>$(ProjectDir)</PackagePath>
 		</None>
 	</ItemGroup>
 
