@@ -9,6 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Tester\**" />
+    <EmbeddedResource Remove="Tester\**" />
+    <None Remove="Tester\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\StateEngine.Deferred\StateEngine.Deferred.csproj" />
     <ProjectReference Include="..\StateEngine.Validation\StateEngine.Validation.csproj" />
     <ProjectReference Include="..\StateEngine.Visualizer\StateEngine.Visualizer.csproj" />

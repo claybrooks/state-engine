@@ -1,6 +1,6 @@
-# StateEngine
+# StateEngine.Deferred
 
-StateEngine is a library for building state machines.
+StateEngine.Deferred is an implementation of StateEngine.IStateMachine.  It uses a queueing mechanism to defer the processing of stimulus events.
 
 ## Installation
 
