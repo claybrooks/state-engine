@@ -35,11 +35,11 @@ public static class BuilderExtensions
         where TState : struct
         where TStimulus : struct
     {
-        return builder.Build<StateEngineFactory<TState, TStimulus>, IStateEngine<TState, TStimulus>>();
+        return builder.Build<StateEngineFactory<TState, TStimulus>>();
     }
 }
 
-public sealed class StateEngineFactory<TState, TStimulus> : IStateEngineFactory<IStateEngine<TState, TStimulus>, TState, TStimulus>
+public sealed class StateEngineFactory<TState, TStimulus> : IStateEngineFactory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

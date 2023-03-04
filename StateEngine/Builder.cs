@@ -78,19 +78,19 @@ public interface IBuilder<TState, TStimulus>
     IBuilder<TState, TStimulus> WithBoundedHistory(int size);
 
     /// <summary>
-    /// Builds the <see cref="StateEngine{TState,TStimulus}"/>
+    /// 
     /// </summary>
+    /// <typeparam name="TStateEngineFactory"></typeparam>
     /// <returns></returns>
-    TStateEngine Build<TStateEngineFactory, TStateEngine>() 
-        where TStateEngine : IStateEngine<TState, TStimulus>
-        where TStateEngineFactory : IStateEngineFactory<TStateEngine, TState, TStimulus>, new();
+    IStateEngine<TState, TStimulus> Build<TStateEngineFactory>()
+        where TStateEngineFactory : IStateEngineFactory<TState, TStimulus>, new();
 
     /// <summary>
-    /// Builds the <see cref="StateEngine{TState,TStimulus}"/>
+    /// 
     /// </summary>
+    /// <param name="factory"></param>
     /// <returns></returns>
-    TStateEngine Build<TStateEngine>(IStateEngineFactory<TStateEngine, TState, TStimulus> factory)
-        where TStateEngine : IStateEngine<TState, TStimulus>;
+    IStateEngine<TState, TStimulus> Build(IStateEngineFactory<TState, TStimulus> factory);
 
     /// <summary>
     /// 
@@ -294,12 +294,11 @@ public interface IStateBuilder<TState, TStimulus>
     IStateBuilder<TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, ITransitionAction<TState, TStimulus> transitionAction);
 }
 
-public interface IStateEngineFactory<out TStateEngine, TState, TStimulus>
-    where TStateEngine : IStateEngine<TState, TStimulus>
+public interface IStateEngineFactory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    TStateEngine Create(TState initialState,
+    IStateEngine<TState, TStimulus> Create(TState initialState,
         ITransitionActionRegistry<TState, TStimulus> enterActions,
         ITransitionActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
@@ -408,15 +407,13 @@ public class Builder<TState, TStimulus> : IBuilder<TState, TStimulus>
             _guardRegistry);
     }
     
-    public TStateEngine Build<TStateEngineFactory, TStateEngine>()
-        where TStateEngine : IStateEngine<TState, TStimulus>
-        where TStateEngineFactory : IStateEngineFactory<TStateEngine, TState, TStimulus>, new()
+    public IStateEngine<TState, TStimulus> Build<TStateEngineFactory>()
+        where TStateEngineFactory : IStateEngineFactory<TState, TStimulus>, new()
     {
         return Build(new TStateEngineFactory());
     }
     
-    public TStateEngine Build<TStateEngine>(IStateEngineFactory<TStateEngine, TState, TStimulus> factory)
-        where TStateEngine : IStateEngine<TState, TStimulus>
+    public IStateEngine<TState, TStimulus>  Build(IStateEngineFactory<TState, TStimulus> factory)
     {
         return factory.Create(_initialState, _enterActionRegistry, _leaveActionRegistry, _stateMap, _guardRegistry, _history);
     }

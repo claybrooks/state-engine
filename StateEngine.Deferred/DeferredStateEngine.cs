@@ -8,7 +8,8 @@ public static class BuilderExtensions
         where TState : struct
         where TStimulus : struct
     {
-        return builder.Build<DeferredStateEngineFactory<TState, TStimulus>, IDeferredStateEngine<TState, TStimulus>>();
+        return builder.Build<DeferredStateEngineFactory<TState, TStimulus>>() as IDeferredStateEngine<TState, TStimulus> 
+               ?? throw new InvalidCastException($"Unable to cast output from {nameof(DeferredStateEngineFactory<TState, TStimulus>)} to {nameof(IDeferredStateEngine<TState, TStimulus>)}");
     }
 }
 
@@ -36,11 +37,11 @@ public interface IDeferredStateEngine<out TState, TStimulus> : IStateEngine<TSta
     Task AwaitIdleAsync(CancellationToken token = default);
 }
 
-public sealed class DeferredStateEngineFactory<TState, TStimulus> : IStateEngineFactory<IDeferredStateEngine<TState, TStimulus>, TState, TStimulus>
+public sealed class DeferredStateEngineFactory<TState, TStimulus> : IStateEngineFactory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    public IDeferredStateEngine<TState, TStimulus> Create(TState initialState,
+    public IStateEngine<TState, TStimulus> Create(TState initialState,
         ITransitionActionRegistry<TState, TStimulus> enterActions,
         ITransitionActionRegistry<TState, TStimulus> leaveActions,
         IStateMap<TState, TStimulus> stateTransitions,
