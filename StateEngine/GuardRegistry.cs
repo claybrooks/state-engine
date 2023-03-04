@@ -11,7 +11,7 @@ public interface ITransitionGuard<in TState, in TStimulus>
     where TState : struct
     where TStimulus : struct
 {
-    Task<bool> Check(ITransition<TState, TStimulus> transition);
+    Task<bool> CheckAsync(ITransition<TState, TStimulus> transition);
 }
 
 public interface ITransitionGuardRegistry<TState, TStimulus> where TState : struct where TStimulus : struct
@@ -19,7 +19,7 @@ public interface ITransitionGuardRegistry<TState, TStimulus> where TState : stru
     bool Register(ITransition<TState, TStimulus> transition, Func<ITransition<TState, TStimulus>, bool> guard);
     bool Register<TGuard>(ITransition<TState, TStimulus> transition) where TGuard : ITransitionGuard<TState, TStimulus>, new();
     bool Register(ITransition<TState, TStimulus> transition, ITransitionGuard<TState, TStimulus> transitionGuard);
-    Task<bool> CheckTransition(ITransition<TState, TStimulus> transition);
+    Task<bool> CheckTransitionAsync(ITransition<TState, TStimulus> transition);
 }
 
 internal sealed class DelegateTransitionGuard<TState, TStimulus> : ITransitionGuard<TState, TStimulus>
@@ -32,7 +32,7 @@ internal sealed class DelegateTransitionGuard<TState, TStimulus> : ITransitionGu
         _delegate = @delegate;
     }
 
-    public Task<bool> Check(ITransition<TState, TStimulus> transition)
+    public Task<bool> CheckAsync(ITransition<TState, TStimulus> transition)
     {
         return Task.FromResult(_delegate(transition));
     }
@@ -48,7 +48,7 @@ internal sealed class AsyncDelegateTransitionGuard<TState, TStimulus> : ITransit
         _delegate = @delegate;
     }
 
-    public async Task<bool> Check(ITransition<TState, TStimulus> transition)
+    public async Task<bool> CheckAsync(ITransition<TState, TStimulus> transition)
     {
         return await _delegate(transition);
     }
@@ -75,9 +75,9 @@ internal sealed class GuardRegistry<TState, TStimulus> : ITransitionGuardRegistr
         return _stateTransitionGuards.TryAdd(transition, transitionGuard);
     }
 
-    public async Task<bool> CheckTransition(ITransition<TState, TStimulus> transition)
+    public async Task<bool> CheckTransitionAsync(ITransition<TState, TStimulus> transition)
     {
-        return !_stateTransitionGuards.TryGetValue(transition, out var guard) || await guard.Check(transition);
+        return !_stateTransitionGuards.TryGetValue(transition, out var guard) || await guard.CheckAsync(transition);
     }
 
     public IReadOnlyList<ITransition<TState, TStimulus>> GuardTransitions => _stateTransitionGuards.Keys.ToList();

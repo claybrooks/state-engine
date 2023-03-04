@@ -24,7 +24,7 @@ public interface IStateEngine<out TState, TStimulus>
     /// <param name="stimulus"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    Task<bool> Post(TStimulus stimulus, CancellationToken token = default);
+    Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default);
     
     IEnumerable<IHistoryItem<TState, TStimulus>> History { get; }
 }
@@ -89,7 +89,7 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
 
     public IEnumerable<IHistoryItem<TState, TStimulus>> History => _history;
 
-    public async Task<bool> Post(TStimulus stimulus, CancellationToken cancellationToken = default)
+    public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken cancellationToken = default)
     {
         // Unable to get the next state with the supplied stimulus
         if (!_stateTransitions.CheckTransition(CurrentState, stimulus, out var next_state))
@@ -113,7 +113,7 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
 
         var transition = new Transition<TState, TStimulus> { From = CurrentState, To = next_state, Reason = stimulus };
 
-        if (! await _guardRegistry.CheckTransition(transition))
+        if (! await _guardRegistry.CheckTransitionAsync(transition))
         {
             return false;
         }

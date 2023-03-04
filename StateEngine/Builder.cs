@@ -24,7 +24,7 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// <param name="caller"></param>
     /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
+    IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state enter event
@@ -49,7 +49,7 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// <param name="caller"></param>
     /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
+    IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state leave event
@@ -330,7 +330,7 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
 
     #region Global Enter Actions
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
+    public IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
         return WithEnterAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
@@ -351,7 +351,7 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
 
     #region Global Leave Actions
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
+    public IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
         return WithLeaveAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
@@ -525,7 +525,7 @@ public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
 
     public IStateBuilder<TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
-        _enterActionRegistry.Register(transitionAction);
+        _enterActionRegistry.Register(_state, transitionAction);
         return this;
     }
 
@@ -565,7 +565,7 @@ public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
 
     public IStateBuilder<TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
-        _leaveActionRegistry.Register(transitionAction);
+        _leaveActionRegistry.Register(_state, transitionAction);
         return this;
     }
 

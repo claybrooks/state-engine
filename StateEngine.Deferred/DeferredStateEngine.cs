@@ -16,14 +16,14 @@ public interface IDeferredStateEngine<out TState, TStimulus> : IStateEngine<TSta
     /// <param name="stimulus"></param>
     /// <param name="token"></param>
     /// <returns></returns>
-    Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken token);
+    Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken token = default);
 
     /// <summary>
     /// Waits for the state machine queue to become empty.
     /// </summary>
     /// <param name="token"></param>
     /// <returns></returns>
-    Task AwaitIdleAsync(CancellationToken token);
+    Task AwaitIdleAsync(CancellationToken token = default);
 }
 
 public class DeferredStateEngineBuilder<TState, TStimulus> : Builder<IDeferredStateEngine<TState, TStimulus>, TState, TStimulus>
@@ -82,8 +82,8 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
     #endregion
 
     #region Async API
-    
-    public async Task<bool> Post(TStimulus stimulus, CancellationToken token = default)
+
+    public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
     {
         await _stimulusChannel.Writer.WriteAsync(stimulus, token);
         return true;
@@ -91,7 +91,7 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
 
     public async Task<bool> PostAndWaitAsync(TStimulus stimulus, CancellationToken token = default)
     {
-        var posted = await Post(stimulus, token);
+        var posted = await PostAsync(stimulus, token);
         if (!posted)
         {
             return false;
@@ -133,7 +133,7 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
             try
             {
                 var next = await _stimulusChannel.Reader.ReadAsync(token);
-                await _stateEngine.Post(next, token);
+                await _stateEngine.PostAsync(next, token);
             }
             catch (TaskCanceledException)
             {

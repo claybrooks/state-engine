@@ -1,30 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
-		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Company>$(Authors)</Company>
-		<Description>Core library for developing state machines.</Description>
-		<Authors>Clay Brooks</Authors>
-		<Copyright>This is free and unencumbered software released into the public domain.</Copyright>
-		<PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
-		<PackageTags>statemachine;state;machine</PackageTags>
-		<PackageReleaseNotes>Initial Release</PackageReleaseNotes>
-		<PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-		<LangVersion>latest</LangVersion>
-		<Version>1.0.0</Version>
-		<Title>StateEngine</Title>
-	</PropertyGroup>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <Company>$(Authors)</Company>
+        <Description>Core library for developing state machines.</Description>
+        <Authors>Clay Brooks</Authors>
+        <Copyright>This is free and unencumbered software released into the public domain.</Copyright>
+        <PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
+        <PackageTags>statemachine;state;machine</PackageTags>
+        <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+        <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+        <LangVersion>latest</LangVersion>
+        <Version>1.0.0</Version>
+        <Title>StateEngine</Title>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<None Include="README.md">
-			<Pack>True</Pack>
-			<PackagePath>$(ProjectDir)</PackagePath>
-		</None>
-	</ItemGroup>
+    <PropertyGroup>
+        <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+        <WarningLevel>3</WarningLevel>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md">
+            <Pack>True</Pack>
+            <PackagePath>$(ProjectDir)</PackagePath>
+        </None>
+    </ItemGroup>
 
 </Project>

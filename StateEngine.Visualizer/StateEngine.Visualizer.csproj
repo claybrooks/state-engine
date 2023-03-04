@@ -1,37 +1,42 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
-		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Company>$(Authors)</Company>
-		<Description>StateMachine visualization implementation</Description>
-		<Authors>Clay Brooks</Authors>
-		<Copyright>This is free and unencumbered software released into the public domain.</Copyright>
-		<PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
-		<PackageTags>statemachine;state;machine</PackageTags>
-		<PackageReleaseNotes>Initial Release</PackageReleaseNotes>
-		<PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-		<LangVersion>latest</LangVersion>
-		<Version>1.0.0</Version>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-	</PropertyGroup>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TargetFrameworks>netstandard21;netstandard20</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <Company>$(Authors)</Company>
+        <Description>StateMachine visualization implementation</Description>
+        <Authors>Clay Brooks</Authors>
+        <Copyright>This is free and unencumbered software released into the public domain.</Copyright>
+        <PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
+        <PackageTags>statemachine;state;machine</PackageTags>
+        <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+        <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+        <LangVersion>latest</LangVersion>
+        <Version>1.0.0</Version>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\StateEngine\StateEngine.csproj" />
-	</ItemGroup>
+    <PropertyGroup>
+        <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+        <WarningLevel>3</WarningLevel>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="DotNetGraph" Version="2.7.0" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\StateEngine\StateEngine.csproj" />
+    </ItemGroup>
 
-	<ItemGroup>
-	  <None Include="README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>$(ProjectDir)</PackagePath>
-	  </None>
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="DotNetGraph" Version="2.7.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="README.md">
+        <Pack>True</Pack>
+        <PackagePath>$(ProjectDir)</PackagePath>
+      </None>
+    </ItemGroup>
 
 </Project>

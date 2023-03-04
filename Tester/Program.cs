@@ -1,158 +1,87 @@
 ﻿using StateEngine;
 using StateEngine.Deferred;
-using StateEngine.Validation;
-using StateEngine.Visualizer;
-using Tester;
 
-void PlayQuickStopAction(ITransition<State, Stimulus> transition)
-{
-    Console.WriteLine($"Playing special animation for {transition.From}->{transition.To} because of {transition.Reason}");
-}
+var engine = new DeferredStateEngineBuilder<State, Stimulus>(State.Start)
+    // Global level actions
+    // Will trigger whenever any state is entered/left.
+    //.WithEnterAction(t => Console.WriteLine($"Global Enter: {t.From} -> {t.To} : {t.Reason}"))
+    //.WithLeaveAction(t => Console.WriteLine($"Global Leave: {t.From} -> {t.To} : {t.Reason}"))
 
-var state_machine_builder = new PlayerAnimationStateEngineBuilder(State.Idle)
-    .WithUnboundedHistory()
-    .WithEnterAction(new AnimationTransitionAction())
-    .WithState(State.Idle, sb =>
+    .WithState(State.Start, startState =>
     {
-        sb.CanTransitionTo(State.Walking, Stimulus.Walk)
-            .CanTransitionTo(State.Running, Stimulus.Run)
-            .CanTransitionTo(State.Crouched, Stimulus.Crouch);
+        // State level actions
+        // Will trigger whenever this state is entered or left
+        startState.WithEnterAction(t => Console.WriteLine($"StartState Enter: {t.From} -> {t.To} : {t.Reason}"));
+        startState.WithLeaveAction(t => Console.WriteLine($"StartState Leave: {t.From} -> {t.To} : {t.Reason}"));
+
+        // Transition level actions
+        // Will trigger whenever the specific transition occurs
+        startState.WithEnterAction(
+            State.Middle, // The state being left
+            Stimulus.GoToStart, // The reason the transition occurred
+            t => Console.WriteLine($"StartStateEnterAction: {t.From} -> {t.To} : {t.Reason}"));
+
+        startState.WithLeaveAction(
+            State.Middle, // The state being entered
+            Stimulus.GoToMiddle, // The reason the transition occurred
+            t => Console.WriteLine($"StartStateLeaveAction: {t.From} -> {t.To} : {t.Reason}"));
+
+        startState.CanTransitionTo(State.Middle, Stimulus.GoToMiddle);
     })
-    .WithState(State.Walking, sb =>
+    .WithState(State.Middle, middleState =>
     {
-        sb.CanTransitionTo(State.Running, Stimulus.Run)
-            .CanTransitionTo(State.Idle, Stimulus.Stop)
-            .CanTransitionTo(State.CrouchWalking, Stimulus.Crouch);
-    })
-    .WithState(State.Running, sb =>
-    {
-        sb.CanTransitionTo(State.Walking, Stimulus.Walk)
-            .CanTransitionTo(State.Idle, Stimulus.Stop)
-            .CanTransitionTo(State.Idle, Stimulus.QuickStop)
-
-            .WithLeaveGuard<QuickStopTransitionGuard>(State.Idle, Stimulus.QuickStop)
-            .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
-    })
-    .WithState(State.Crouched, sb =>
-    {
-        sb.CanTransitionTo(State.CrouchWalking, Stimulus.Walk)
-            .CanTransitionTo(State.Idle, Stimulus.Stop);
-    })
-    .WithState(State.CrouchWalking, sb =>
-    {
-        sb.CanTransitionTo(State.Walking, Stimulus.Walk)
-            .CanTransitionTo(State.Crouched, Stimulus.Stop);
-    })
-    .WithState(State.Test, sb =>
-    {
-        sb.CanTransitionTo(State.Idle, Stimulus.QuickStop)
-            .WithLeaveGuard<QuickStopTransitionGuard>(State.Idle, Stimulus.QuickStop)
-            .WithLeaveAction(State.Idle, Stimulus.QuickStop, PlayQuickStopAction, nameof(PlayQuickStopAction));
-    });
-
-var validator = state_machine_builder.Validator<ValidatorFactory<State, Stimulus>>(Rules.Get<State, Stimulus>());
-var results = validator.Validate();
-if (results.Errors.Any())
-{
-    foreach (var error in results.Errors)
-    {
-        Console.WriteLine(error.Reason);
-    }
-}
-
-var visualizer = state_machine_builder.Visualizer<VisualizerFactory<State, Stimulus>>();
-visualizer.CreateDot("PlayerAnimation", "PlayerAnimation.dot");
-var state_machine = state_machine_builder.Build();
-
-ConsoleKey key;
-do
-{
-    while (!Console.KeyAvailable)
-    {
-    }
-
-    key = Console.ReadKey(true).Key;
-
-    switch (key)
-    {
-        case ConsoleKey.W:
-            await state_machine.Post(Stimulus.Walk);
-            break;
-        case ConsoleKey.C:
-            await state_machine.Post(Stimulus.Crouch);
-            break;
-        case ConsoleKey.R:
-            await state_machine.Post(Stimulus.Run);
-            break;
-        case ConsoleKey.S:
-            await state_machine.Post(Stimulus.Stop);
-            break;
-        case ConsoleKey.Q:
-            await state_machine.Post(Stimulus.QuickStop);
-            break;
-    }
-
-} while (key != ConsoleKey.Escape);
-
-//var serializer = new FluentState.Persistence.JsonSerializer<State, Stimulus>(new StateTypeConverter(), new StimulusTypeConverter());
-//await serializer.Save(state_machine, "stateEngine.json");
-
-await state_machine.Post(Stimulus.Walk);
-await state_machine.Post(Stimulus.Crouch);
-await state_machine.Post(Stimulus.Stop);
-await state_machine.Post(Stimulus.Stop);
-await state_machine.Post(Stimulus.Run);
-await state_machine.Post(Stimulus.QuickStop);
-await state_machine.Post(Stimulus.Crouch);
-await state_machine.Post(Stimulus.Walk);
-await state_machine.Post(Stimulus.Stop);
-await state_machine.Post(Stimulus.Stop);
-
-state_machine.Dispose();
-
-Console.WriteLine("Exiting");
-
-public class AnimationTransitionAction : ITransitionAction<State, Stimulus>
-{
-    public string Id => nameof(AnimationTransitionAction);
-
-    public Task OnTransition(ITransition<State, Stimulus> transition)
-    {
-        Console.WriteLine($"Playing {transition.From}->{transition.To} animation");
-        return Task.CompletedTask;
-    }
-}
-
-public class DebugTransition: ITransitionAction<State, Stimulus>
-{
-    public string Id => nameof(DebugTransition);
-
-    public Task OnTransition(ITransition<State, Stimulus> transition)
-    {
-        Console.WriteLine($"Leaving {transition.From}, Entering {transition.To}, Because Of {transition.Reason}");
-        return Task.CompletedTask;
-    }
-}
-
-public class QuickStopTransitionGuard : ITransitionGuard<State, Stimulus>
-{
-    private DateTime _dateOfLastQuickStop = DateTime.MinValue;
-
-    public Task<bool> Check(ITransition<State, Stimulus> transition)
-    { 
-        var success = (DateTime.Now - _dateOfLastQuickStop).TotalSeconds > 5;
-        if (success)
+        middleState.WithEnterAction(t =>
         {
-            _dateOfLastQuickStop = DateTime.Now;
-        }
-        return Task.FromResult(success);
-    }
+            Console.WriteLine($"MiddleState Enter: {t.From} -> {t.To} : {t.Reason}");
+        });
+        middleState.CanTransitionTo(State.End, Stimulus.GoToEnd);
+        middleState.CanTransitionTo(State.Start, Stimulus.GoToStart);
+
+        // This guard will protect transitioning in to this state
+        middleState.WithEnterGuard(State.Start, Stimulus.GoToMiddle, t => true);
+        // This guard will protect transitioning out of this state
+        middleState.WithLeaveGuard(State.Start, Stimulus.GoToStart, t => true);
+    })
+    .WithState(State.End, endState =>
+    {
+        endState.WithEnterAction(t =>
+        {
+            Console.WriteLine($"EndState Enter: {t.From} -> {t.To} : {t.Reason}");
+        });
+        // State level actions
+        endState.WithEnterAction(t => Console.WriteLine($"EndStateEnterAction: {t.From} -> {t.To} : {t.Reason}"));
+        endState.WithLeaveAction(t => Console.WriteLine($"EndStateLeaveAction: {t.From} -> {t.To} : {t.Reason}"));
+    })
+    .Build();
+
+Console.WriteLine("Engine Startup");
+await engine.AwaitIdleAsync();
+Console.WriteLine("GoToMiddle");
+await engine.PostAndWaitAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
+Console.WriteLine("GoToStart");
+await engine.PostAndWaitAsync(Stimulus.GoToStart).ConfigureAwait(false);
+Console.WriteLine("GoToEnd");
+await engine.PostAndWaitAsync(Stimulus.GoToEnd).ConfigureAwait(false);
+Console.WriteLine("GoToMiddle");
+await engine.PostAndWaitAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
+Console.WriteLine("GoToEnd");
+await engine.PostAndWaitAsync(Stimulus.GoToEnd).ConfigureAwait(false);
+
+await engine.AwaitIdleAsync();
+
+Console.WriteLine("End");
+Console.ReadKey();
+
+public enum State
+{
+    Start,
+    Middle,
+    End
 }
 
-
-public class PlayerAnimationStateEngineBuilder : DeferredStateEngineBuilder<State, Stimulus>
+public enum Stimulus
 {
-    public PlayerAnimationStateEngineBuilder(State initialState) : base(initialState)
-    {
-    }
+    GoToStart,
+    GoToMiddle,
+    GoToEnd
 }
