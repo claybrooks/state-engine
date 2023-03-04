@@ -97,7 +97,7 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
         {
             if (ThrowExceptionOnFailedTransition)
             {
-                throw new Exception($"No state transition available.  Current State: {CurrentState}, Stimulus: {stimulus}");
+                throw new UnregisteredTransitionException<TState, TStimulus>(CurrentState, stimulus);
             }
             return false;
         }
@@ -107,7 +107,7 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
         {
             if (ThrowExceptionOnSameStateTransition)
             {
-                throw new Exception($"Trying to transition to same state.  Current State: {CurrentState}, Stimulus: {stimulus}");
+                throw new TransitioningToCurrentStateException<TState,TStimulus>(CurrentState, stimulus);
             }
             return false;
         }
