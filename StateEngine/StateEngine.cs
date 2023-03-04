@@ -29,12 +29,13 @@ public interface IStateEngine<out TState, TStimulus>
     IEnumerable<IHistoryItem<TState, TStimulus>> History { get; }
 }
 
-public sealed class StateEngineBuilder<TState, TStimulus> : Builder<IStateEngine<TState, TStimulus>, TState, TStimulus>
-    where TState : struct
-    where TStimulus : struct
+public static class BuilderExtensions
 {
-    public StateEngineBuilder(TState initialState) : base(initialState, new StateEngineFactory<TState, TStimulus>())
+    public static IStateEngine<TState, TStimulus> BuildStateEngine<TState, TStimulus>(this IBuilder<TState, TStimulus> builder)
+        where TState : struct
+        where TStimulus : struct
     {
+        return builder.Build<StateEngineFactory<TState, TStimulus>, IStateEngine<TState, TStimulus>>();
     }
 }
 

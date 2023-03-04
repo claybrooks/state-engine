@@ -2,8 +2,7 @@
 
 namespace StateEngine;
 
-public interface IBuilder<out TStateEngine, TState, TStimulus>
-    where TStateEngine : IStateEngine<TState, TStimulus>
+public interface IBuilder<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -13,7 +12,7 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// <param name="state"></param>
     /// <param name="configureState"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithState(TState state, Action<IStateBuilder<TState, TStimulus>> configureState);
+    IBuilder<TState, TStimulus> WithState(TState state, Action<IStateBuilder<TState, TStimulus>> configureState);
 
     /// <summary>
     /// Adds a trigger for any state enter event
@@ -24,21 +23,21 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// <param name="caller"></param>
     /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
+    IBuilder<TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state enter event
     /// </summary>
     /// <typeparam name="TAction"></typeparam>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithEnterAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
+    IBuilder<TState, TStimulus> WithEnterAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
 
     /// <summary>
     /// Adds a trigger for any state enter event
     /// </summary>
     /// <param name="transitionAction"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction);
+    IBuilder<TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction);
 
     /// <summary>
     /// Adds a trigger for any state leave event
@@ -49,40 +48,49 @@ public interface IBuilder<out TStateEngine, TState, TStimulus>
     /// <param name="caller"></param>
     /// <param name="lineNumber"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
+    IBuilder<TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0);
 
     /// <summary>
     /// Adds a trigger for any state leave event
     /// </summary>
     /// <typeparam name="TAction"></typeparam>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
+    IBuilder<TState, TStimulus> WithLeaveAction<TAction>() where TAction : ITransitionAction<TState, TStimulus>, new();
 
     /// <summary>
     /// Adds a trigger for any state leave event
     /// </summary>
     /// <param name="transitionAction"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction);
+    IBuilder<TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction);
 
     /// <summary>
     /// Enables <see cref="StateEngine{TState,TStimulus}"/> history and makes it unbounded
     /// </summary>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithUnboundedHistory();
+    IBuilder<TState, TStimulus> WithUnboundedHistory();
 
     /// <summary>
     /// Enables <see cref="StateEngine{TState,TStimulus}"/> history and bounds it to <paramref name="size"/>
     /// </summary>
     /// <param name="size"></param>
     /// <returns></returns>
-    IBuilder<TStateEngine, TState, TStimulus> WithBoundedHistory(int size);
+    IBuilder<TState, TStimulus> WithBoundedHistory(int size);
 
     /// <summary>
     /// Builds the <see cref="StateEngine{TState,TStimulus}"/>
     /// </summary>
     /// <returns></returns>
-    TStateEngine Build();
+    TStateEngine Build<TStateEngineFactory, TStateEngine>() 
+        where TStateEngine : IStateEngine<TState, TStimulus>
+        where TStateEngineFactory : IStateEngineFactory<TStateEngine, TState, TStimulus>, new();
+
+    /// <summary>
+    /// Builds the <see cref="StateEngine{TState,TStimulus}"/>
+    /// </summary>
+    /// <returns></returns>
+    TStateEngine Build<TStateEngine>(IStateEngineFactory<TStateEngine, TState, TStimulus> factory)
+        where TStateEngine : IStateEngine<TState, TStimulus>;
 
     /// <summary>
     /// 
@@ -299,13 +307,11 @@ public interface IStateEngineFactory<out TStateEngine, TState, TStimulus>
         IHistory<TState, TStimulus> history);
 }
 
-public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, TState, TStimulus>
-    where TStateEngine : IStateEngine<TState, TStimulus>
+public class Builder<TState, TStimulus> : IBuilder<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     private readonly TState _initialState;
-    private readonly IStateEngineFactory<TStateEngine, TState, TStimulus> _factory;
     
     private readonly StateMap<TState, TStimulus> _stateMap = new();
     private readonly TransitionAction<TState, TStimulus> _enterActionRegistry = new();
@@ -313,13 +319,12 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
     private readonly GuardRegistry<TState, TStimulus> _guardRegistry = new();
     private readonly History<TState, TStimulus> _history = new();
 
-    public Builder(TState initialState, IStateEngineFactory<TStateEngine, TState, TStimulus> factory)
+    public Builder(TState initialState)
     {
         _initialState = initialState;
-        _factory = factory;
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithState(TState state,
+    public IBuilder<TState, TStimulus> WithState(TState state,
         Action<IStateBuilder<TState, TStimulus>> configureState)
     {
         var state_builder =
@@ -330,18 +335,18 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
 
     #region Global Enter Actions
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
+    public IBuilder<TState, TStimulus> WithEnterAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
         return WithEnterAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithEnterAction<TAction>()
+    public IBuilder<TState, TStimulus> WithEnterAction<TAction>()
         where TAction : ITransitionAction<TState, TStimulus>, new()
     {
         return WithEnterAction(new TAction());
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction)
+    public IBuilder<TState, TStimulus> WithEnterAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
         _enterActionRegistry.Register(transitionAction);
         return this;
@@ -351,18 +356,18 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
 
     #region Global Leave Actions
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
+    public IBuilder<TState, TStimulus> WithLeaveAction(Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
         return WithLeaveAction(new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction<TAction>()
+    public IBuilder<TState, TStimulus> WithLeaveAction<TAction>()
         where TAction : ITransitionAction<TState, TStimulus>, new()
     {
         return WithLeaveAction(new TAction());
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction)
+    public IBuilder<TState, TStimulus> WithLeaveAction(ITransitionAction<TState, TStimulus> transitionAction)
     {
         _leaveActionRegistry.Register(transitionAction);
         return this;
@@ -370,14 +375,14 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
 
     #endregion
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithUnboundedHistory()
+    public IBuilder<TState, TStimulus> WithUnboundedHistory()
     {
         _history.Enabled = true;
         _history.MakeUnbounded();
         return this;
     }
 
-    public IBuilder<TStateEngine, TState, TStimulus> WithBoundedHistory(int size)
+    public IBuilder<TState, TStimulus> WithBoundedHistory(int size)
     {
         _history.Enabled = true;
         _history.MakeBounded(size);
@@ -403,9 +408,17 @@ public class Builder<TStateEngine, TState, TStimulus> : IBuilder<TStateEngine, T
             _guardRegistry);
     }
     
-    public TStateEngine  Build()
+    public TStateEngine Build<TStateEngineFactory, TStateEngine>()
+        where TStateEngine : IStateEngine<TState, TStimulus>
+        where TStateEngineFactory : IStateEngineFactory<TStateEngine, TState, TStimulus>, new()
     {
-        return _factory.Create(_initialState, _enterActionRegistry, _leaveActionRegistry, _stateMap, _guardRegistry, _history);
+        return Build(new TStateEngineFactory());
+    }
+    
+    public TStateEngine Build<TStateEngine>(IStateEngineFactory<TStateEngine, TState, TStimulus> factory)
+        where TStateEngine : IStateEngine<TState, TStimulus>
+    {
+        return factory.Create(_initialState, _enterActionRegistry, _leaveActionRegistry, _stateMap, _guardRegistry, _history);
     }
 }
 
