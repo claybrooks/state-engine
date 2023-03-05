@@ -1,7 +1,7 @@
 ﻿using StateEngine;
 using StateEngine.Deferred;
 
-using var engine = new Builder<State, Stimulus>(State.Start)
+var engine = new Builder<State, Stimulus>(State.Start)
     // Global level actions
     // Will trigger whenever any state is entered/left.
     //.WithEnterAction(t => Console.WriteLine($"Global Enter: {t.From} -> {t.To} : {t.Reason}"))
@@ -56,15 +56,15 @@ using var engine = new Builder<State, Stimulus>(State.Start)
     .BuildDeferredStateEngine();
 
 Console.WriteLine("GoToMiddle");
-await engine.PostAndWaitAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
+await engine.PostAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
 Console.WriteLine("GoToStart");
-await engine.PostAndWaitAsync(Stimulus.GoToStart).ConfigureAwait(false);
+await engine.PostAsync(Stimulus.GoToStart).ConfigureAwait(false);
 Console.WriteLine("GoToEnd");
-await engine.PostAndWaitAsync(Stimulus.GoToEnd).ConfigureAwait(false);
+await engine.PostAsync(Stimulus.GoToEnd).ConfigureAwait(false);
 Console.WriteLine("GoToMiddle");
-await engine.PostAndWaitAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
+await engine.PostAsync(Stimulus.GoToMiddle).ConfigureAwait(false);
 Console.WriteLine("GoToEnd");
-await engine.PostAndWaitAsync(Stimulus.GoToEnd).ConfigureAwait(false);
+await engine.PostAsync(Stimulus.GoToEnd).ConfigureAwait(false);
 
 //await engine.AwaitIdleAsync();
 

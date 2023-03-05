@@ -31,4 +31,12 @@ public class StubEngine<TState, TStimulus> : IStateEngine<TState, TStimulus> whe
     }
 
     public IEnumerable<IHistoryItem<TState, TStimulus>> History { get; }
+
+    #region IDisposable
+
+    public void Dispose()
+    {
+    }
+
+    #endregion
 }

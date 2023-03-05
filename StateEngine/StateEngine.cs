@@ -1,6 +1,6 @@
 ﻿namespace StateEngine;
 
-public interface IStateEngine<out TState, TStimulus>
+public interface IStateEngine<out TState, TStimulus> : IDisposable
     where TState : struct
     where TStimulus : struct
 {
@@ -127,4 +127,12 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
 
         return true;
     }
+
+    #region IDisposable
+
+    public void Dispose()
+    {
+    }
+
+    #endregion
 }
