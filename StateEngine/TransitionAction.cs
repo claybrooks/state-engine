@@ -94,7 +94,7 @@ internal sealed class AsyncDelegateTransitionAction<TState, TStimulus> : Abstrac
     }
 }
 
-internal sealed class TransitionAction<TState, TStimulus> : ITransitionActionRegistry<TState, TStimulus>, ITransitionActionRegistryValidation<TState, TStimulus>
+public sealed class TransitionAction<TState, TStimulus> : ITransitionActionRegistry<TState, TStimulus>, ITransitionActionRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

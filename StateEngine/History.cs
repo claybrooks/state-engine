@@ -33,14 +33,18 @@ internal sealed class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TSti
     public DateTimeOffset When { get; set; }
 }
 
-internal sealed class History<TState, TStimulus> : IHistory<TState, TStimulus>
+public sealed class History<TState, TStimulus> : IHistory<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     private readonly Queue<HistoryItem<TState, TStimulus>> _history = new();
     private int _size;
+    
+    public History() : this(-1)
+    {
+    }
 
-    public History(int size = -1)
+    public History(int size)
     {
         _size = size;
         Enabled = false;

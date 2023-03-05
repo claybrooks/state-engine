@@ -54,7 +54,7 @@ internal sealed class AsyncDelegateTransitionGuard<TState, TStimulus> : ITransit
     }
 }
 
-internal sealed class GuardRegistry<TState, TStimulus> : ITransitionGuardRegistry<TState, TStimulus>, ITransitionGuardRegistryValidation<TState, TStimulus>
+public sealed class GuardRegistry<TState, TStimulus> : ITransitionGuardRegistry<TState, TStimulus>, ITransitionGuardRegistryValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

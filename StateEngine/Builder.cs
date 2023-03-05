@@ -306,17 +306,31 @@ public interface IStateEngineFactory<TState, TStimulus>
         IHistory<TState, TStimulus> history);
 }
 
-public class Builder<TState, TStimulus> : IBuilder<TState, TStimulus>
+public sealed class Builder<TState, TStimulus> : Builder<TState, TStimulus, StateMap<TState, TStimulus>, TransitionAction<TState, TStimulus>, GuardRegistry<TState, TStimulus>, History<TState, TStimulus>>
     where TState : struct
     where TStimulus : struct
 {
+    public Builder(TState initialState) : base(initialState)
+    {
+
+    }
+}
+
+public class Builder<TState, TStimulus, TStateMap, TTransitionAction, TGuardRegistry, THistory> : IBuilder<TState, TStimulus>
+    where TState : struct
+    where TStimulus : struct
+    where TStateMap : class, IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>, new()
+    where TTransitionAction : class, ITransitionActionRegistry<TState, TStimulus>, ITransitionActionRegistryValidation<TState, TStimulus>, new()
+    where TGuardRegistry : class, ITransitionGuardRegistry<TState, TStimulus>, ITransitionGuardRegistryValidation<TState, TStimulus>, new()
+    where THistory : class, IHistory<TState, TStimulus>, new()
+{
     private readonly TState _initialState;
     
-    private readonly StateMap<TState, TStimulus> _stateMap = new();
-    private readonly TransitionAction<TState, TStimulus> _enterActionRegistry = new();
-    private readonly TransitionAction<TState, TStimulus> _leaveActionRegistry = new();
-    private readonly GuardRegistry<TState, TStimulus> _guardRegistry = new();
-    private readonly History<TState, TStimulus> _history = new();
+    private readonly TStateMap _stateMap = new();
+    private readonly TTransitionAction _enterActionRegistry = new();
+    private readonly TTransitionAction _leaveActionRegistry = new();
+    private readonly TGuardRegistry _guardRegistry = new();
+    private readonly THistory _history = new();
 
     public Builder(TState initialState)
     {
@@ -419,7 +433,7 @@ public class Builder<TState, TStimulus> : IBuilder<TState, TStimulus>
     }
 }
 
-public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
+public sealed class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -582,6 +596,7 @@ public class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TStimulus>
     #endregion
 
     #region State Leave Transitions
+
     public IStateBuilder<TState, TStimulus> WithLeaveAction(TState to, TStimulus reason, Action<ITransition<TState, TStimulus>> action, string? idOverride = null, [CallerFilePath] string filePath = "", [CallerMemberName] string caller = "", [CallerLineNumber] int lineNumber = 0)
     {
         return WithLeaveAction(to, reason, new DelegateTransitionAction<TState, TStimulus>(action, idOverride, filePath, caller, lineNumber));

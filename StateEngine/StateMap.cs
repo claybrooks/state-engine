@@ -18,7 +18,7 @@ public interface IStateMapValidation<TState, TStimulus>
     bool IsTransitionRegistered(ITransition<TState, TStimulus> transition);
 }
 
-internal sealed class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
+public sealed class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, IStateMapValidation<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
