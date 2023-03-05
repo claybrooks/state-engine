@@ -70,7 +70,6 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
 
     public DeferredStateEngine(IStateEngine<TState, TStimulus> stateEngineImpl, bool waitForEngineIdleOnDispose = true)
     {
-        // We set here because it is idle
         _idleResetEvent.Set();
 
         _stateEngineImpl = stateEngineImpl;
@@ -92,8 +91,10 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
 
     public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
     {
-        await _stimulusChannel.Writer.WriteAsync(stimulus, token).ConfigureAwait(false);
-        _idleResetEvent.Reset();
+        await _stimulusChannel.Writer.WriteAsync(stimulus, token).AsTask().ContinueWith(t =>
+        {
+            _idleResetEvent.Reset();
+        }).ConfigureAwait(false);
         return true;
     }
 
@@ -121,7 +122,7 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IDeferredStateEng
     {
         if (_waitForEngineIdleOnDispose)
         {
-            _idleResetEvent.Wait();
+            AwaitIdleAsync().GetAwaiter().GetResult();
         }
 
         _cancellationTokenSource.Cancel();
