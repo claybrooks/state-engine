@@ -12,10 +12,10 @@
 		<PackageProjectUrl>https://github.com/claybrooks/bug-free-broccoli</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/claybrooks/bug-free-broccoli</RepositoryUrl>
 		<PackageTags>statemachine;state;machine</PackageTags>
-		<PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+		<PackageReleaseNotes>Now only implements IStateMachine&lt;&gt;</PackageReleaseNotes>
 		<PackageLicenseExpression>Unlicense</PackageLicenseExpression>
 		<LangVersion>latest</LangVersion>
-		<Version>1.0.0</Version>
+		<Version>1.1.0</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 

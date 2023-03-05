@@ -36,7 +36,7 @@ A fluent style api is provided to build your state-machine.
 ```csharp
 using StateEngine;
 
-var engine = new StateEngineBuilder<State, Stimulus>(State.Start)
+var engine = new Builder<State, Stimulus>(State.Start)
     .WithState(State.Start, startState =>
     {
         startState.CanTransitionTo(State.Middle, Stimulus.GoToMiddle);
@@ -50,7 +50,7 @@ var engine = new StateEngineBuilder<State, Stimulus>(State.Start)
     {
         // Final state, don't allow any transition out of end
     })
-    .Build();
+    .Build<StateMachineFactory<State, Stimulus>>();
 ```
 
 The frame of reference for registering transitions can be changed to suite your needs.  In the above example, ```.CanTransitionTo(...)``` was used.  You can use ```.CanTransitionFrom(...)``` if that feels more natural when registering state transitions.  In some cases, it may be easier to use ```.CanTransitionFrom(...)``` because the ```Stimulus``` used in the registration is logically related to the ```StateBuilder``` section you are in.
@@ -70,7 +70,7 @@ var engine = new StateEngineBuilder<State, Stimulus>(State.Start)
         // Final state, don't allow any transition out of end
         endState.CanTransitionFrom(State.Middle, Stimulus.GoToEnd);
     })
-    .Build();
+    .Build<StateMachineFactory<State, Stimulus>>();
 ```
 
 You can specify actions at varying levels within the state engine
@@ -112,7 +112,7 @@ var engine = new StateEngineBuilder<State, Stimulus>(State.Start)
     {
         // Final state, don't allow any transition out of end
     })
-    .Build();
+    .Build<StateMachineFactory<State, Stimulus>>();
 ```
 Actions registered to ```Leave``` events are triggered prior to the state transition.  Actions registered to ```Enter``` events are triggered immediately after the state transition.
 
@@ -134,7 +134,7 @@ You can register guards to disallow transitions within the engine.  All guards a
         // This guard will always allow transitioning in to this state
         middleState.WithEnterGuard(State.Start, Stimulus.GoToMiddle, t => { return true; });
 
-        // This guard will always block transitioning out of this state
+        // This guard will always block transitioning out of this state to the State.Start state
         middleState.WithLeaveGuard(State.Start, Stimulus.GoToStart, t => { return false; });
     })
 ```
