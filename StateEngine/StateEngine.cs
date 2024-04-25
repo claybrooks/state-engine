@@ -1,6 +1,6 @@
 ﻿namespace StateEngine;
 
-public interface IStateEngine<out TState, TStimulus> : IDisposable
+public interface IStateEngine<TState, TStimulus> : IDisposable
     where TState : struct
     where TStimulus : struct
 {
@@ -15,8 +15,20 @@ public interface IStateEngine<out TState, TStimulus> : IDisposable
     /// setup
     /// </summary>
     bool ThrowExceptionOnSameStateTransition { get; set; }
-    
+
+    /// <summary>
+    /// 
+    /// </summary>
     TState CurrentState { get; }
+
+    /// <summary>
+    /// Forcefully sets the state to <param name="state"/><br/>
+    /// This will not invoke any guards, but enter actions and leave actions will be triggered
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task OverrideStateAsync(TState state, CancellationToken token);
 
     /// <summary>
     /// Queue's the provided <typeparamref name="TStimulus"/> to the state machine, but defers execution.
@@ -25,7 +37,10 @@ public interface IStateEngine<out TState, TStimulus> : IDisposable
     /// <param name="token"></param>
     /// <returns></returns>
     Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default);
-    
+
+    /// <summary>
+    /// 
+    /// </summary>
     IEnumerable<IHistoryItem<TState, TStimulus>> History { get; }
 }
 
@@ -90,6 +105,11 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
 
     public IEnumerable<IHistoryItem<TState, TStimulus>> History => _history;
 
+    public async Task OverrideStateAsync(TState state, CancellationToken cancellationToken = default)
+    {
+        await DoHandleStateAsync(state, null, cancellationToken);
+    }
+
     public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken cancellationToken = default)
     {
         // Unable to get the next state with the supplied stimulus
@@ -107,23 +127,33 @@ internal sealed class StateEngine<TState, TStimulus> : IStateEngine<TState, TSti
         {
             if (ThrowExceptionOnSameStateTransition)
             {
-                throw new TransitioningToCurrentStateException<TState,TStimulus>(CurrentState, stimulus);
+                throw new TransitioningToCurrentStateException<TState, TStimulus>(CurrentState, stimulus);
             }
             return false;
         }
 
-        var transition = new Transition<TState, TStimulus> { From = CurrentState, To = next_state, Reason = stimulus };
+        return await DoHandleStateAsync(next_state, stimulus, cancellationToken);
+    }
 
-        if (! await _guardRegistry.CheckTransitionAsync(transition))
+    private async Task<bool> DoHandleStateAsync(TState nextState, TStimulus? reason, CancellationToken cancellationToken = default)
+    {
+        var transition = new Transition<TState, TStimulus> { From = CurrentState, To = nextState, Reason = reason };
+
+        if (reason is not null)
         {
-            return false;
+            if (!(await _guardRegistry.CheckLeaveAsync(transition) &&
+                  await _guardRegistry.CheckEnterAsync(transition) &&
+                  await _guardRegistry.CheckTransitionAsync(transition)))
+            {
+                return false;
+            }
         }
 
         _leaveActions.Trigger(CurrentState, transition);
-        CurrentState = next_state;
+        CurrentState = nextState;
         _enterActions.Trigger(CurrentState, transition);
 
-        _history.Add(CurrentState, next_state, stimulus);
+        _history.Add(CurrentState, nextState, reason);
 
         return true;
     }

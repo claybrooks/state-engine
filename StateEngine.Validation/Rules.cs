@@ -181,7 +181,7 @@ public sealed class UnreachableGuard<TState, TStimulus> : AbstractValidationRule
         ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation,
         IStateMapValidation<TState, TStimulus> stateMapValidation)
     {
-        var registered_transitions = guardRegistryValidation.GuardTransitions;
+        var registered_transitions = guardRegistryValidation.GuardedTransitions;
         return registered_transitions.Where(transition => !stateMapValidation.IsTransitionRegistered(transition)).ToList();
     }
 }

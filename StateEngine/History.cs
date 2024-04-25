@@ -2,12 +2,13 @@
 
 namespace StateEngine;
 
-public interface IHistoryItem<out TState, out TStimulus>
+public interface IHistoryItem<out TState, TStimulus>
     where TState : struct
+    where TStimulus : struct
 {
     public TState To { get; }
     public TState From { get; }
-    public TStimulus Reason { get; }
+    public TStimulus? Reason { get; }
     public DateTimeOffset When { get; }
 }
 
@@ -17,7 +18,7 @@ public interface IHistory<TState, TStimulus> : IEnumerable<IHistoryItem<TState, 
 {
     bool Enabled { get; set; }
     bool IsUnbounded { get; }
-    void Add(TState from, TState to, TStimulus when);
+    void Add(TState from, TState to, TStimulus? when);
     void MakeBounded(int size);
     void MakeUnbounded();
     void Clear();
@@ -29,7 +30,7 @@ internal sealed class HistoryItem<TState, TStimulus> : IHistoryItem<TState, TSti
 {
     public TState To { get; set; }
     public TState From { get; set; }
-    public TStimulus Reason { get; set; }
+    public TStimulus? Reason { get; set; }
     public DateTimeOffset When { get; set; }
 }
 
@@ -64,7 +65,7 @@ public sealed class History<TState, TStimulus> : IHistory<TState, TStimulus>
         _history.Clear();
     }
 
-    public void Add(TState from, TState to, TStimulus when)
+    public void Add(TState from, TState to, TStimulus? when)
     {
         if (!Enabled)
         {

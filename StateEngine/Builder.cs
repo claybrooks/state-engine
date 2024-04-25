@@ -159,6 +159,30 @@ public interface IStateBuilder<TState, TStimulus>
     IStateBuilder<TState, TStimulus> WithLeaveGuard(TState to, TStimulus reason, ITransitionGuard<TState, TStimulus> transitionGuard);
 
     /// <summary>
+    /// Triggers for all exits from a state
+    /// </summary>
+    /// <param name="guard"></param>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithLeaveGuard(Func<ITransition<TState, TStimulus>, bool> guard);
+
+    /// <summary>
+    /// Triggers for all exits from a state
+    /// </summary>
+    /// <typeparam name="TGuard"></typeparam>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithLeaveGuard<TGuard>() where TGuard : ITransitionGuard<TState, TStimulus>, new();
+
+    /// <summary>
+    /// Triggers for all exits from a state
+    /// </summary>
+    /// <param name="transitionGuard"></param>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithLeaveGuard(ITransitionGuard<TState, TStimulus> transitionGuard);
+
+
+
+
+    /// <summary>
     /// Register guardRegistry whenever transitioning from <paramref name="from"/> because of <paramref name="reason"/>
     /// </summary>
     /// <param name="from"></param>
@@ -166,6 +190,7 @@ public interface IStateBuilder<TState, TStimulus>
     /// <param name="guard"></param>
     /// <returns></returns>
     IStateBuilder<TState, TStimulus> WithEnterGuard(TState from, TStimulus reason, Func<ITransition<TState, TStimulus>, bool> guard);
+
     /// <summary>
     /// Register guardRegistry whenever transitioning from <paramref name="from"/> because of <paramref name="reason"/>
     /// </summary>
@@ -174,6 +199,7 @@ public interface IStateBuilder<TState, TStimulus>
     /// <param name="reason"></param>
     /// <returns></returns>
     IStateBuilder<TState, TStimulus> WithEnterGuard<TGuard>(TState from, TStimulus reason) where TGuard : ITransitionGuard<TState, TStimulus>, new();
+
     /// <summary>
     /// Register guardRegistry whenever transitioning from <paramref name="from"/> because of <paramref name="reason"/>
     /// </summary>
@@ -182,6 +208,27 @@ public interface IStateBuilder<TState, TStimulus>
     /// <param name="transitionGuard"></param>
     /// <returns></returns>
     IStateBuilder<TState, TStimulus> WithEnterGuard(TState from, TStimulus reason, ITransitionGuard<TState, TStimulus> transitionGuard);
+
+    /// <summary>
+    /// Triggers for all entry's into the state
+    /// </summary>
+    /// <param name="guard"></param>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithEnterGuard(Func<ITransition<TState, TStimulus>, bool> guard);
+
+    /// <summary>
+    /// Triggers for all entry's into the state
+    /// </summary>
+    /// <typeparam name="TGuard"></typeparam>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithEnterGuard<TGuard>() where TGuard : ITransitionGuard<TState, TStimulus>, new();
+
+    /// <summary>
+    /// Triggers for all entry's into the state
+    /// </summary>
+    /// <param name="transitionGuard"></param>
+    /// <returns></returns>
+    IStateBuilder<TState, TStimulus> WithEnterGuard(ITransitionGuard<TState, TStimulus> transitionGuard);
 
     /// <summary>
     /// Adds a trigger to fire whenever this state is entered
@@ -512,6 +559,23 @@ public sealed class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TSti
         return this;
     }
 
+    public IStateBuilder<TState, TStimulus> WithEnterGuard(Func<ITransition<TState, TStimulus>, bool> guard)
+    {
+        return WithEnterGuard(new DelegateTransitionGuard<TState, TStimulus>(guard));
+    }
+
+    public IStateBuilder<TState, TStimulus> WithEnterGuard<TGuard>()
+        where TGuard : ITransitionGuard<TState, TStimulus>, new()
+    {
+        return WithEnterGuard(new TGuard());
+    }
+
+    public IStateBuilder<TState, TStimulus> WithEnterGuard(ITransitionGuard<TState, TStimulus> transitionGuard)
+    {
+        _guardRegistry.RegisterEnter(_state, transitionGuard);
+        return this;
+    }
+
     #endregion
 
     #region Leave Guards
@@ -530,6 +594,23 @@ public sealed class StateBuilder<TState, TStimulus> : IStateBuilder<TState, TSti
     public IStateBuilder<TState, TStimulus> WithLeaveGuard(TState to, TStimulus reason, ITransitionGuard<TState, TStimulus> transitionGuard)
     {
         _guardRegistry.Register(new Transition<TState, TStimulus> {From = _state, To = to, Reason = reason}, transitionGuard);
+        return this;
+    }
+
+    public IStateBuilder<TState, TStimulus> WithLeaveGuard(Func<ITransition<TState, TStimulus>, bool> guard)
+    {
+        return WithLeaveGuard(new DelegateTransitionGuard<TState, TStimulus>(guard));
+    }
+
+    public IStateBuilder<TState, TStimulus> WithLeaveGuard<TGuard>()
+        where TGuard : ITransitionGuard<TState, TStimulus>, new()
+    {
+        return WithLeaveGuard(new TGuard());
+    }
+
+    public IStateBuilder<TState, TStimulus> WithLeaveGuard(ITransitionGuard<TState, TStimulus> transitionGuard)
+    {
+        _guardRegistry.RegisterLeave(_state, transitionGuard);
         return this;
     }
 

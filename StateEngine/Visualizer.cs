@@ -15,9 +15,9 @@ public interface IVisualizerFactory<TState, TStimulus>
 
 public interface IVisualizer
 {
-    void CreateDot(string stateMachineName, string fullPathToOutputFile);
+    Task CreateDotAsync(string stateMachineName, string fullPathToOutputFile);
 
-    string CreateDot(string stateMachineName);
+    Task<string> CreateDotAsync(string stateMachineName);
 }
 
 public class VisualizationRules<TState, TStimulus>

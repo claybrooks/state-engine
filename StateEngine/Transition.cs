@@ -1,15 +1,15 @@
 ﻿namespace StateEngine;
 
-public interface ITransition<out TState, out TStimulus>
+public interface ITransition<out TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     TState From { get; }
     TState To { get; }
-    TStimulus Reason { get; }
+    TStimulus? Reason { get; }
 }
 
-public interface ITransitionComparer<in TState, in TStimulus> : IEqualityComparer<ITransition<TState, TStimulus>>
+public interface ITransitionComparer<in TState, TStimulus> : IEqualityComparer<ITransition<TState, TStimulus>>
     where TState : struct
     where TStimulus : struct
 {
@@ -21,7 +21,7 @@ public sealed class Transition<TState, TStimulus> : ITransition<TState, TStimulu
 {
     public TState From { get; set; }
     public TState To { get; set; }
-    public TStimulus Reason { get; set; }
+    public TStimulus? Reason { get; set; }
 
     public override string ToString()
     {

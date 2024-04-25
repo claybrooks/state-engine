@@ -1,6 +1,6 @@
 ﻿namespace StateEngine;
 
-public interface IStateMap<TState, in TStimulus>
+public interface IStateMap<TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -26,12 +26,17 @@ public sealed class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, 
 
     public bool Register(ITransition<TState, TStimulus> transition)
     {
+        if (transition.Reason is null)
+        {
+            throw new ArgumentNullException(nameof(transition.Reason));
+        }
+
         if (!_stateTransitions.ContainsKey(transition.From))
         {
             _stateTransitions.Add(transition.From, new Dictionary<TStimulus, TState>());
         }
 
-        return _stateTransitions[transition.From].TryAdd(transition.Reason, transition.To);
+        return _stateTransitions[transition.From].TryAdd(transition.Reason.Value, transition.To);
     }
 
     public bool CheckTransition(TState currentState, TStimulus reason, out TState nextState)
@@ -57,9 +62,14 @@ public sealed class StateMap<TState, TStimulus> : IStateMap<TState, TStimulus>, 
     public IReadOnlyDictionary<TStimulus, TState> StateTransitions(TState state) => _stateTransitions[state];
     public bool IsTransitionRegistered(ITransition<TState, TStimulus> transition)
     {
+        if (transition.Reason is null)
+        {
+            throw new ArgumentNullException(nameof(transition.Reason));
+        }
+
         if (_stateTransitions.TryGetValue(transition.From, out var value))
         {
-            if (value.TryGetValue(transition.Reason, out var state))
+            if (value.TryGetValue(transition.Reason.Value, out var state))
             {
                 return transition.To.Equals(state);
             }

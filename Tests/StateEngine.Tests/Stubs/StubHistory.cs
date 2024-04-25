@@ -17,7 +17,7 @@ public class StubHistory<TState, TStimulus> : IHistory<TState, TStimulus>
 
     public bool Enabled { get; set; }
     public bool IsUnbounded { get; }
-    public void Add(TState from, TState to, TStimulus when)
+    public void Add(TState from, TState to, TStimulus? when)
     {
         throw new NotImplementedException();
     }

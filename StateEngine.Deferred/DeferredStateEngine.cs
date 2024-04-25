@@ -38,7 +38,7 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IStateEngine<TSta
     private readonly bool _waitForEngineIdleOnDispose;
 
     // Queue for holding stimuli
-    private readonly Channel<TStimulus> _stimulusChannel = Channel.CreateUnbounded<TStimulus>();
+    private readonly Channel<OneOf> _stimulusChannel = Channel.CreateUnbounded<OneOf>();
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Task _queueProcessingTask;
 
@@ -67,9 +67,14 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IStateEngine<TSta
 
     public IEnumerable<IHistoryItem<TState, TStimulus>> History => _stateEngineImpl.History;
 
+    public async Task OverrideStateAsync (TState state, CancellationToken cancellationToken = default)
+    {
+        await _stimulusChannel.Writer.WriteAsync(new OneOf(state), cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
     {
-        await _stimulusChannel.Writer.WriteAsync(stimulus, token).ConfigureAwait(false);
+        await _stimulusChannel.Writer.WriteAsync(new OneOf(stimulus), token).ConfigureAwait(false);
         return true;
     }
 
@@ -99,9 +104,20 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IStateEngine<TSta
         {
             while (await _stimulusChannel.Reader.WaitToReadAsync(_cancellationTokenSource.Token).ConfigureAwait(false))
             {
-                while (_stimulusChannel.Reader.TryRead(out var stimulus))
+                while (_stimulusChannel.Reader.TryRead(out var next))
                 {
-                    await _stateEngineImpl.PostAsync(stimulus, _cancellationTokenSource.Token).ConfigureAwait(false);
+                    if (next.State is not null)
+                    {
+                        await _stateEngineImpl.OverrideStateAsync(next.State.Value, _cancellationTokenSource.Token).ConfigureAwait(false);
+                    }
+                    else if (next.Stimulus is not null)
+                    {
+                        await _stateEngineImpl.PostAsync(next.Stimulus.Value, _cancellationTokenSource.Token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // This can't happen because of OneOf's constructors
+                    }
                 }
             }
         }
@@ -112,4 +128,20 @@ internal sealed class DeferredStateEngine<TState, TStimulus> : IStateEngine<TSta
     }
 
     #endregion
+
+    internal class OneOf
+    {
+        public OneOf(TState state)
+        {
+            State = state;
+        }
+
+        public OneOf(TStimulus stimulus)
+        {
+            Stimulus = stimulus;
+        }
+
+        public TStimulus? Stimulus { get; }
+        public TState? State { get; }
+    }
 }

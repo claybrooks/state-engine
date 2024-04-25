@@ -1,8 +1,8 @@
-﻿using DotNetGraph;
-using DotNetGraph.Edge;
-using DotNetGraph.Extensions;
-using DotNetGraph.Node;
+﻿using DotNetGraph.Core;
 using System.Drawing;
+using System.Text;
+using DotNetGraph.Compilation;
+using DotNetGraph.Extensions;
 
 namespace StateEngine.Visualizer;
 
@@ -23,8 +23,8 @@ internal abstract class AbstractVisualizer : IVisualizer
     private static long _nodeCounter;
     protected static long NodeCounter => ++_nodeCounter;
 
-    public abstract void CreateDot(string stateMachineName, string fullPathToOutputFile);
-    public abstract string CreateDot(string stateMachineName);
+    public abstract Task CreateDotAsync(string stateMachineName, string fullPathToOutputFile);
+    public abstract Task<string> CreateDotAsync(string stateMachineName);
 }
 
 internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
@@ -55,13 +55,13 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
         _initialState = initialState;
     }
 
-    public override void CreateDot(string stateMachineName, string fullPathToOutputFile)
+    public override async Task CreateDotAsync(string stateMachineName, string fullPathToOutputFile)
     {
-        var data = CreateDot(stateMachineName);
+        var data = await CreateDotAsync(stateMachineName);
         File.WriteAllText(fullPathToOutputFile, data);
     }
 
-    public override string CreateDot(string stateMachineName)
+    public override async Task<string> CreateDotAsync(string stateMachineName)
     {
         var graph = DoBuildGraph(stateMachineName);
         if (_rules.ValidationResults != null)
@@ -69,18 +69,27 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
             DoHighlightErrors(graph, _rules.ValidationResults);
         }
 
-        return graph.Compile(indented: true);
+        var string_writer = new StringWriter();
+        await graph.CompileAsync(new CompilationContext(string_writer, new CompilationOptions()
+        {
+            Indented = true
+        }));
+
+        return string_writer.ToString();
     }
 
     #region Graph Building
 
     private DotGraph DoBuildGraph(string stateMachineName)
     {
-        var graph = new DotGraph(stateMachineName)
+        var graph = new DotGraph()
         {
             Directed = true,
-            Strict = true
+            Strict = true,
+            Label = stateMachineName,
+            Identifier = new DotIdentifier(stateMachineName)
         };
+
         foreach (var node in _stateMap.TopLevelStates)
         {
             var state_node_id = $"{node}";
@@ -89,7 +98,7 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
             graph.AddOrGetNode(state_node_id, ns =>
             {
                 ns.Shape = is_starting_node ? DotNodeShape.Pentagon : DotNodeShape.Square;
-                ns.Color = is_starting_node ? Color.Green : Color.Black;
+                ns.Color = is_starting_node ? DotColor.Green : DotColor.Black;
             });
 
             foreach (var state_transition in _stateMap.StateTransitions(node))
@@ -114,11 +123,11 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
 
         graph.AddOrGetNode(from_node_id, ns =>
         {
-            ns.Color = Color.Green;
+            ns.Color = DotColor.Green;
         });
         graph.AddOrGetNode(to_node_id, ns =>
         {
-            ns.Color = Color.Green;
+            ns.Color = DotColor.Green;
         });
 
         var state_wide_leave_actions = leaveActionRegistryValidation.StateWideActions.GetValueOrDefault(transition.From, Enumerable.Empty<string>());
@@ -132,7 +141,7 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
         var reason = $"{transition.Reason}";
 
         // First check for guard
-        if (guardedGuardRegistryValidation.GuardTransitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
+        if (guardedGuardRegistryValidation.GuardedTransitions.Any(gt => gt.From.Equals(transition.From) && gt.To.Equals(transition.To) && gt.Reason.Equals(transition.Reason)))
         {
             var guard_node_id = $"{transition.Reason}:{NodeCounter}";
             var guard_node_label = $"{transition.Reason}";
@@ -146,12 +155,12 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
             graph.AddOrGetNode(guard_node_id, ns =>
             {
                 ns.Shape = DotNodeShape.Diamond;
-                ns.Color = Color.DarkOrange;
+                ns.Color = DotColor.OrangeRed;
             });
         }
 
         var action_node_shape = DotNodeShape.Rectangle;
-        var action_node_color = Color.Blue;
+        var action_node_color = DotColor.Blue;
 
         if (rules.DisplayActions)
         {
@@ -261,9 +270,11 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
             ns.Label = toLabel;
         });
 
-        graph.AddEdge(from_node, to_node, edge =>
+        graph.Add(new DotEdge()
         {
-            edge.Label = reason != null ? $"{reason}" : edge.Label;
+            From = from_node.Identifier,
+            To = to_node.Identifier,
+            Label = reason != null ? $"{reason}" : ""
         });
     }
 
@@ -282,7 +293,7 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
                 }
                 else
                 {
-                    node.FillColor = Color.Red;
+                    node.FillColor = DotColor.Red;
                     node.Style = DotNodeStyle.Filled;
                 }
             }
@@ -297,7 +308,7 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
                 }
                 else
                 {
-                    from.FillColor = Color.Red;
+                    from.FillColor = DotColor.Red;
                     from.Style = DotNodeStyle.Filled;
                 }
 
@@ -309,23 +320,23 @@ internal sealed class Visualizer<TState, TStimulus> : AbstractVisualizer
                 }
                 else
                 {
-                    to.FillColor = Color.Red;
+                    to.FillColor = DotColor.Red;
                     to.Style = DotNodeStyle.Filled;
                 }
 
                 foreach (var edge in graph.Elements.OfType<DotEdge>())
                 {
-                    var left_node = edge.Left;
-                    var right_node = edge.Right;
+                    var left_node = edge.From;
+                    var right_node = edge.To;
 
                     if (left_node == null || right_node == null)
                     {
                         continue;
                     }
 
-                    if (left_node == from && right_node == to)
+                    if (left_node == from.Identifier && right_node == to.Identifier)
                     {
-                        edge.Color = Color.Red;
+                        edge.Color = DotColor.Red;
                     }
                 }
             }
@@ -339,7 +350,7 @@ internal static class Extension
 {
     public static DotNode? GetNode(this DotGraph graph, string id, Action<DotNode>? nodeSetup = null)
     {
-        var node = graph.Elements.OfType<DotNode>().FirstOrDefault(e => e.Identifier == id);
+        var node = graph.Elements.OfType<DotNode>().FirstOrDefault(e => e.Identifier.Value == id);
         if (node != null && nodeSetup != null)
         {
             nodeSetup(node);
@@ -357,17 +368,13 @@ internal static class Extension
             return node;
         }
 
-        DotNode? n = null;
-        graph.AddNode(id, ns =>
+        var n = new DotNode()
         {
-            n = ns;
-            nodeSetup?.Invoke(n);
-        });
+            Identifier = new DotIdentifier(id)
+        };
+        nodeSetup?.Invoke(n);
+        graph.Add(n);
 
-        if (n == null)
-        {
-            throw new Exception("If this happens, it's a bug within the dot generation library, sorry");
-        }
         return n;
     }
 }

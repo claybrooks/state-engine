@@ -9,7 +9,7 @@ public interface ITransitionActionRegistryValidation<TState, TStimulus>
     IReadOnlyDictionary<ITransition<TState, TStimulus>, IEnumerable<string>> ActionsOnTransition { get; }
 }
 
-public interface ITransitionAction<in TState, in TStimulus>
+public interface ITransitionAction<in TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

@@ -23,14 +23,14 @@ public interface IValidatorFactory<TState, TStimulus>
         ITransitionGuardRegistryValidation<TState, TStimulus> guardRegistryValidation);
 }
 
-public interface IValidator<out TState, out TStimulus>
+public interface IValidator<out TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
     IValidationResult<TState, TStimulus> Validate();
 }
 
-public interface IValidationError<out TState, out TStimulus>
+public interface IValidationError<out TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {
@@ -39,7 +39,7 @@ public interface IValidationError<out TState, out TStimulus>
     IEnumerable<ITransition<TState, TStimulus>> ErrorTransitions { get;}
 }
 
-public interface IValidationResult<out TState, out TStimulus>
+public interface IValidationResult<out TState, TStimulus>
     where TState : struct
     where TStimulus : struct
 {

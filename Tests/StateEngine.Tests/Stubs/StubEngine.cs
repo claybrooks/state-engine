@@ -13,7 +13,7 @@ public class StubEngine<TState, TStimulus> : IStateEngine<TState, TStimulus> whe
         History = history;
     }
 
-    public List<(TState state, TStimulus stimulus)> PostCalls = new();
+    public List<(TState state, TStimulus? stimulus)> PostCalls = new();
 
     public bool ThrowExceptionOnFailedTransition { get; set; } = false;
     public bool ThrowExceptionOnSameStateTransition { get; set; } = false;
@@ -23,6 +23,12 @@ public class StubEngine<TState, TStimulus> : IStateEngine<TState, TStimulus> whe
     public ITransitionActionRegistry<TState, TStimulus> LeaveActions { get; }
     public IStateMap<TState, TStimulus> StateTransitions { get; }
     public ITransitionGuardRegistry<TState, TStimulus> GuardRegistry { get; }
+
+    public Task OverrideStateAsync(TState state, CancellationToken token)
+    {
+        PostCalls.Add((state, null));
+        return Task.CompletedTask;
+    }
 
     public Task<bool> PostAsync(TStimulus stimulus, CancellationToken token = default)
     {
